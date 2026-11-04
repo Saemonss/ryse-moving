@@ -848,6 +848,7 @@ export const nl: Dictionary = {
     modal: 'Venster',
     tabs: 'Tabbladen',
     ai: 'AI-verwerking',
+    phone: 'Telefoon van de chauffeur: klavier, keuze, foto, handtekening',
     primary: 'Opslaan',
     secondary: 'Wijzigen',
     ghost: 'Details bekijken',

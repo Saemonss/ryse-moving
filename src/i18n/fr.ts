@@ -843,6 +843,7 @@ export const fr = {
     modal: 'Fenêtre',
     tabs: 'Onglets',
     ai: 'Traitement IA',
+    phone: 'Téléphone du chauffeur : pavé, choix, photo, signature',
     primary: 'Enregistrer',
     secondary: 'Modifier',
     ghost: 'Voir le détail',

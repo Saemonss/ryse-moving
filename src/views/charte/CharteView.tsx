@@ -19,6 +19,7 @@ import { Tabs } from '../../ui/Tabs'
 import { AiProcessing, useFakeAi } from '../../ui/AiProcessing'
 import { toast } from '../../ui/Toast'
 import { Avatar } from '../../ui/Avatar'
+import { CharteDemoPhone } from './CharteDemoPhone'
 
 const SWATCHES = ['--ink', '--accent', '--accent-soft', '--accent-pale', '--surface', '--surface-2', '--line', '--muted', '--success', '--warning', '--danger', '--info']
 const SAMPLE_NAMES = ['Nathalie Verhaegen', 'Karim Benali', 'Julie Desmet', 'Thomas Lemaire', 'Marc Janssens', 'Claire Vandamme']
@@ -146,6 +147,10 @@ export function CharteView() {
             </div>
           )}
         </div>
+      </Card>
+
+      <Card title={t('charte.phone')}>
+        <CharteDemoPhone />
       </Card>
 
       <Modal
