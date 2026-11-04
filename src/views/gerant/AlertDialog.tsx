@@ -24,7 +24,10 @@ export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: 
   const ai = useFakeAi(true, 1300)
   const { run, reset } = ai
   useEffect(() => {
-    if (!alert) return
+    if (!alert) {
+      reset() // évite d'afficher un instant l'ancienne suggestion au prochain conflit
+      return
+    }
     setShown(alert)
     if (alert.kind === 'conflict') run()
     else reset()
@@ -32,7 +35,9 @@ export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: 
   if (!shown) return null
 
   const { title, apply, done } = labels(shown, data, t, lang)
-  const aiReady = shown.kind !== 'conflict' || ai.status === 'done'
+  // Pas de solution trouvée (aucun camion libre) : on n'affiche pas de bouton qui ne ferait rien.
+  const canApply = shown.kind !== 'conflict' || !!shown.suggestedVehicleId
+  const aiReady = (shown.kind !== 'conflict' || ai.status === 'done') && canApply
   return (
     <Modal
       open={!!alert}

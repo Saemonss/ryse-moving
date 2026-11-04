@@ -20,6 +20,10 @@ export default class CheckReporter implements Reporter {
     this.rows.push({ file: basename(test.location.file), title: test.title, ok, checked, details })
   }
 
+  onError(error: { message?: string }) {
+    console.log(`${RED}Erreur de lancement : ${error.message ?? ''}${RESET}`)
+  }
+
   onEnd(result: FullResult) {
     const groups: Record<string, string> = {
       'crawl.spec.ts': 'Zéro bouton mort (chaque vue × chaque langue)',
@@ -40,6 +44,7 @@ export default class CheckReporter implements Reporter {
       }
     }
     const failed = this.rows.filter((r) => !r.ok).length
-    console.log(`\n ${failed === 0 ? `${GREEN}TOUT EST VERT` : `${RED}${failed} test(s) en échec`}${RESET} · ${this.rows.length} tests · ${result.status}\n`)
+    const green = failed === 0 && this.rows.length > 0 && result.status === 'passed'
+    console.log(`\n ${green ? `${GREEN}TOUT EST VERT` : `${RED}PAS VERT : ${failed} test(s) en échec`}${RESET} · ${this.rows.length} tests · ${result.status}\n`)
   }
 }

@@ -132,11 +132,18 @@ function phone(rnd: Random, country: 'BE' | 'FR') {
   return country === 'BE' ? `+3247${rnd.int(0, 9)}${rnd.int(100000, 999999)}` : `+336${rnd.int(10000000, 99999999)}`
 }
 
-/** Décale un jour de déménagement qui tomberait un dimanche (sauf aujourd'hui). */
+/**
+ * N-ième jour ouvré avant/après aujourd'hui (les dimanches sont sautés).
+ * Deux décalages différents donnent toujours deux dates différentes : aucune collision, quel que soit le jour.
+ */
 function workingDay(today: ISODate, offset: number): ISODate {
-  const d = addDays(today, offset)
-  if (offset === 0 || fromISO(d).getDay() !== 0) return d
-  return addDays(d, offset < 0 ? -1 : 1)
+  let d = today
+  const step = offset < 0 ? -1 : 1
+  for (let left = Math.abs(offset); left > 0; ) {
+    d = addDays(d, step)
+    if (fromISO(d).getDay() !== 0) left--
+  }
+  return d
 }
 
 export function createSeed(today: ISODate): DemoData {

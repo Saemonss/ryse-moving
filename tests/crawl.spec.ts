@@ -41,7 +41,9 @@ async function signature(page: Page) {
       toasts: document.querySelectorAll('[data-toast]').length,
       data: localStorage.getItem('ryse-moving-demo'),
       lang: document.documentElement.lang,
-      values: [...document.querySelectorAll('input, textarea')].map((e) => (e as HTMLInputElement).value).join('|'),
+      // Un champ <input> doit produire un effet ailleurs (ex. résultats filtrés) : sa propre valeur ne compte pas.
+      // Une zone de texte libre (<textarea>, ex. brouillon de relance) est acceptée si elle se remplit.
+      values: [...document.querySelectorAll('textarea')].map((e) => (e as HTMLTextAreaElement).value).join('|'),
     })
   })
 }

@@ -46,7 +46,11 @@ export const useLangStore = create<LangState>()(
       setLang: (lang) => set({ lang }),
       toggleLang: () => set({ lang: get().lang === 'fr' ? 'nl' : 'fr' }),
     }),
-    { name: 'ryse-moving-lang' },
+    {
+      name: 'ryse-moving-lang',
+      // Valeur stockée inattendue (ex. 'de') : retour au français.
+      merge: (p, current) => ((p as Partial<LangState>)?.lang === 'nl' ? { ...current, lang: 'nl' } : current),
+    },
   ),
 )
 

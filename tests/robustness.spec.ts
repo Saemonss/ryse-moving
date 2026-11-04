@@ -79,3 +79,22 @@ for (const view of ['gerant', 'planificateur', 'commercial', 'comptabilite']) {
     expect(overflowing).toBe(0)
   })
 }
+
+// Les données dépendent du jour : on rejoue la démo pour chacun des 7 jours de la semaine.
+for (const [i, day] of ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].entries()) {
+  test(`Un ${day} : 5 alertes, chacune réglable, et une mission pour Karim`, async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 10, 2 + i, 9, 0)) // lundi 2 novembre 2026 + i jours
+    await openFresh(page, 'gerant', 'fr')
+    const actions = page.locator('main section').filter({ hasText: 'Alertes' }).getByRole('button')
+    await expect(actions).toHaveCount(5)
+    for (let n = 5; n > 0; n--) {
+      await actions.first().click()
+      const apply = page.locator('dialog[open] footer button').nth(1)
+      await expect(apply).toBeVisible({ timeout: 4000 })
+      await apply.click()
+      await expect(actions).toHaveCount(n - 1)
+    }
+    await page.keyboard.press('3')
+    await expect(page.getByRole('button', { name: 'Commencer ma journée' })).toBeVisible()
+  })
+}

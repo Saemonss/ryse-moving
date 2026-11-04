@@ -4,7 +4,7 @@
  */
 import { useEffect } from 'react'
 import { useI18n } from '../i18n'
-import { useDemo } from '../store/demoStore'
+import { useDemo, watchDayChange } from '../store/demoStore'
 import { Toaster, toast } from '../ui/Toast'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
@@ -37,6 +37,7 @@ export function App() {
   const { lang } = useI18n()
   useShortcuts()
 
+  useEffect(() => watchDayChange(), [])
   useEffect(() => {
     normalizeHash()
     window.addEventListener('hashchange', normalizeHash)

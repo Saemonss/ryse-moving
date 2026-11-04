@@ -50,6 +50,7 @@ export const nl: Dictionary = {
     phoneClient: 'De telefoon van uw klant',
     phoneHint: 'Wat de persoon op het terrein ziet, zonder iets te installeren: een link volstaat.',
     langDone: 'Taal: Nederlands',
+    crashTitle: 'Er liep iets mis. Laad de startgegevens opnieuw om verder te gaan.',
   },
   views: {
     gerant: 'Zaakvoerder',

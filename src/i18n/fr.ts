@@ -45,6 +45,7 @@ export const fr = {
     phoneClient: 'Le téléphone de votre client',
     phoneHint: "Ce que voit la personne sur le terrain, sans rien installer : un lien suffit.",
     langDone: 'Langue : français',
+    crashTitle: 'Un petit souci est survenu. Rechargez les données de départ pour continuer.',
   },
   views: {
     gerant: 'Gérant',

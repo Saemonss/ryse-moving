@@ -3,13 +3,17 @@
  * FR → fr-BE, NL → nl-BE. Les montants sont stockés en centimes (entiers) pour éviter les erreurs d'arrondi.
  */
 import { LOCALES, type Lang } from './index'
+import { fromISO } from '../data/dates'
+
+/** 'AAAA-MM-JJ' est lu en heure locale (sinon le navigateur le lit en UTC et peut afficher la veille). */
+const toDate = (d: Date | string) => (typeof d !== 'string' ? d : /^\d{4}-\d{2}-\d{2}$/.test(d) ? fromISO(d) : new Date(d))
 
 const loc = (lang: Lang) => LOCALES[lang]
 
 export type DateStyle = 'short' | 'medium' | 'long' | 'weekday' | 'dayMonth'
 
 export function fmtDate(date: Date | string, lang: Lang, style: DateStyle = 'medium'): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = toDate(date)
   const options: Record<DateStyle, Intl.DateTimeFormatOptions> = {
     short: { day: '2-digit', month: '2-digit', year: 'numeric' },
     medium: { day: 'numeric', month: 'short', year: 'numeric' },
@@ -21,7 +25,7 @@ export function fmtDate(date: Date | string, lang: Lang, style: DateStyle = 'med
 }
 
 export function fmtTime(date: Date | string, lang: Lang): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = toDate(date)
   return new Intl.DateTimeFormat(loc(lang), { hour: '2-digit', minute: '2-digit' }).format(d)
 }
 
