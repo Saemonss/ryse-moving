@@ -16,9 +16,14 @@ export interface Address {
 }
 
 /** Adresse de chargement ou de livraison, avec les infos d'accès utiles au terrain. */
+export type Access = 'facile' | 'rueEtroite' | 'escalierEtroit' | 'cour'
+export type Parking = 'libre' | 'autorisation' | 'difficile'
+
 export interface Site extends Address {
   floor: number
   elevator: boolean
+  access: Access
+  parking: Parking
 }
 
 export interface Agency {

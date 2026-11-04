@@ -38,8 +38,8 @@ export const VIEWS: ViewDef[] = [
     id: 'gerant', key: '1', layout: 'desktop', icon: LayoutDashboard, user: { kind: 'staff', id: 's-nathalie' },
     screens: [
       home,
-      { id: 'demenagements', icon: ClipboardList, label: 'menu.demenagements', menu: true, ready: false },
-      { id: 'dossier', icon: FileText, label: 'menu.dossier', menu: false, ready: false },
+      { id: 'demenagements', icon: ClipboardList, label: 'menu.demenagements', menu: true, ready: true },
+      { id: 'dossier', icon: FileText, label: 'menu.dossier', menu: false, ready: true },
       { id: 'planning', icon: CalendarRange, label: 'menu.planning', menu: true, ready: false },
       { id: 'equipe', icon: Users, label: 'menu.equipe', menu: true, ready: false },
       { id: 'flotte', icon: Truck, label: 'menu.flotte', menu: true, ready: false },

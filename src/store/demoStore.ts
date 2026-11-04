@@ -13,7 +13,7 @@ import { todayISO } from '../data/dates'
 import type { Absence, Alert, DemoData, ISODate, PlanConflict, Settings } from '../data/types'
 
 export const STORAGE_KEY = 'ryse-moving-demo'
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 
 interface DemoState {
   seedDay: ISODate

@@ -134,6 +134,8 @@ function makeSite(rnd: Random, cityId: string, type: MoveType, forced?: Partial<
     country: city.country,
     floor,
     elevator: type === 'bureaux' || (floor >= 3 ? rnd.next() < 0.7 : floor > 0 && rnd.next() < 0.3),
+    access: rnd.pick(['facile', 'facile', 'rueEtroite', 'escalierEtroit', 'cour'] as const),
+    parking: rnd.pick(['libre', 'autorisation', 'autorisation', 'difficile'] as const),
     ...forced,
   }
 }
