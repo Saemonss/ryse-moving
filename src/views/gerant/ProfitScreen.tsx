@@ -54,6 +54,8 @@ export function ProfitScreen() {
     }
   })
   const euros = (v: number) => fmtMoney(v * 100, lang, false)
+  // Axe en paliers de 15 %, assez large pour toutes les barres et le seuil (même si les Paramètres changent)
+  const axisMax = Math.max(60, Math.ceil(Math.max(threshold, ...byType.map((r) => r.pct)) / 15) * 15)
 
   return (
     <>
@@ -72,7 +74,7 @@ export function ProfitScreen() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byType} layout="vertical" margin={{ left: 8, right: 48, top: 4, bottom: 4 }} barCategoryGap={10}>
                 <CartesianGrid horizontal={false} stroke="#e4e5ee" />
-                <XAxis type="number" domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} allowDataOverflow={false} tickFormatter={(v: number) => `${v} %`} tick={{ fill: INK, fontSize: 12 }} axisLine={false} tickLine={false} />
+                <XAxis type="number" domain={[0, axisMax]} ticks={Array.from({ length: axisMax / 15 + 1 }, (_, i) => i * 15)} tickFormatter={(v: number) => `${v} %`} tick={{ fill: INK, fontSize: 12 }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="type" width={112} tick={{ fill: '#0b1026', fontSize: 13 }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: '#f4f3fb' }} content={<ChartTip format={(v) => `${v} %`} />} />
                 <ReferenceLine x={threshold} stroke="#b4232c" strokeDasharray="4 4" label={{ value: t('profit.threshold', { pct: threshold }), position: 'top', fill: '#b4232c', fontSize: 12 }} />
