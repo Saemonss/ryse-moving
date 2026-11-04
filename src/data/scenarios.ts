@@ -1,33 +1,33 @@
 /*
- * Situations de démo : les alertes sont DÉDUITES des données (jamais stockées).
+ * Alertes du gérant : elles sont DÉDUITES des données (jamais stockées).
  * Régler une alerte = modifier la donnée concernée (fixAlert) ; l'alerte disparaît alors d'elle-même.
  */
 import { addDays, diffDays, fromISO } from './dates'
-import { byId, movesOn, vehicleBusy } from './selectors'
+import { applyFix, detectConflicts } from './conflicts'
+import { isLowMargin } from './margin'
+import { vehicleBusy } from './selectors'
 import type { Alert, DemoData, ISODate } from './types'
 
 const QUOTE_SILENCE_DAYS = 5
-const INSPECTION_WARNING_DAYS = 21
-const TRUCKS = ['camion20', 'camion40', 'porteurHayon']
+/** Alerte entretien / contrôle technique : 30 jours avant l'échéance. */
+export const VEHICLE_WARNING_DAYS = 30
+const CONFLICT_HORIZON_DAYS = 14
+const LOW_MARGIN_LOOKBACK_DAYS = 30
+
+/** Dossiers terminés récemment dont la marge est sous le seuil. */
+export function recentLowMargin(data: DemoData, today: ISODate) {
+  return data.moves.filter(
+    (m) => ['termine', 'facture', 'paye'].includes(m.status) && diffDays(today, m.date) <= LOW_MARGIN_LOOKBACK_DAYS && isLowMargin(m, data),
+  )
+}
 
 export function deriveAlerts(data: DemoData, today: ISODate): Alert[] {
   const alerts: Alert[] = []
+  const horizon = addDays(today, CONFLICT_HORIZON_DAYS)
 
-  // 1. Même camion pour 2 équipes le même jour (aujourd'hui et 14 jours à venir)
-  for (let d = 0; d <= 14; d++) {
-    const day = addDays(today, d)
-    const seen = new Map<string, string>()
-    for (const move of movesOn(data, day)) {
-      const truck = move.vehicleIds.find((v) => TRUCKS.includes(byId(data.vehicles, v)?.kind ?? ''))
-      if (!truck) continue
-      const first = seen.get(truck)
-      if (first) {
-        const free = data.vehicles
-          .filter((v) => TRUCKS.includes(v.kind) && v.volumeM3 >= move.volumeM3 && !vehicleBusy(data, v, day))
-          .sort((a, b) => a.volumeM3 - b.volumeM3)[0]
-        alerts.push({ id: `conflict-${move.id}`, kind: 'conflict', tone: 'danger', moveId: first, otherMoveId: move.id, vehicleId: truck, suggestedVehicleId: free?.id })
-      } else seen.set(truck, move.id)
-    }
+  // 1. Conflits de planning (aujourd'hui → 14 jours)
+  for (const c of detectConflicts(data)) {
+    if (c.date >= today && c.date <= horizon) alerts.push({ id: `conflict-${c.id}`, kind: 'conflict', tone: 'danger', moveId: c.moveId, conflict: c })
   }
 
   // 2. Facture échue non payée
@@ -49,14 +49,15 @@ export function deriveAlerts(data: DemoData, today: ISODate): Alert[] {
     if (m.damage && !m.damage.claimOpened) alerts.push({ id: `damage-${m.id}`, kind: 'damage', tone: 'warning', moveId: m.id })
   }
 
-  // 5. Contrôle technique proche
+  // 5. Contrôle technique dans les 30 jours
   for (const v of data.vehicles) {
     const days = diffDays(v.nextInspection, today)
-    if (!v.inspectionBookedOn && days >= 0 && days <= INSPECTION_WARNING_DAYS) {
+    if (!v.inspectionBookedOn && days >= 0 && days <= VEHICLE_WARNING_DAYS) {
       let suggestedDate: ISODate | undefined
       for (let d = 1; d < days; d++) {
         const day = addDays(today, d)
-        if (fromISO(day).getDay() !== 0 && fromISO(day).getDay() !== 6 && !vehicleBusy(data, v, day)) {
+        const weekday = fromISO(day).getDay()
+        if (weekday !== 0 && weekday !== 6 && !vehicleBusy(data, v, day)) {
           suggestedDate = day
           break
         }
@@ -64,6 +65,10 @@ export function deriveAlerts(data: DemoData, today: ISODate): Alert[] {
       alerts.push({ id: `inspection-${v.id}`, kind: 'inspection', tone: 'info', vehicleId: v.id, days, suggestedDate: suggestedDate ?? addDays(today, 1) })
     }
   }
+
+  // 6. Marges faibles du dernier mois (action « Voir » → Rentabilité)
+  const low = recentLowMargin(data, today)
+  if (low.length) alerts.push({ id: 'low-margin', kind: 'lowMargin', tone: 'warning', count: low.length })
 
   return alerts
 }
@@ -76,10 +81,7 @@ export function fixAlert(data: DemoData, alert: Alert, today: ISODate): DemoData
   })
   switch (alert.kind) {
     case 'conflict':
-      return patchMove(alert.otherMoveId, (m) => ({
-        ...m,
-        vehicleIds: m.vehicleIds.map((v) => (v === alert.vehicleId && alert.suggestedVehicleId ? alert.suggestedVehicleId : v)),
-      }))
+      return alert.conflict ? applyFix(data, alert.conflict) : data
     case 'quote':
       return patchMove(alert.moveId, (m) => ({ ...m, quoteReminderOn: today }))
     case 'invoice':
@@ -91,5 +93,7 @@ export function fixAlert(data: DemoData, alert: Alert, today: ISODate): DemoData
         ...data,
         vehicles: data.vehicles.map((v) => (v.id === alert.vehicleId ? { ...v, inspectionBookedOn: alert.suggestedDate } : v)),
       }
+    case 'lowMargin':
+      return data
   }
 }

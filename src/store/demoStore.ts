@@ -8,18 +8,48 @@ import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { createSeed } from '../data/seed'
 import { fixAlert } from '../data/scenarios'
+import { applyFix } from '../data/conflicts'
 import { todayISO } from '../data/dates'
-import type { Alert, DemoData, ISODate } from '../data/types'
+import type { Absence, Alert, DemoData, ISODate, PlanConflict, Settings } from '../data/types'
 
 export const STORAGE_KEY = 'ryse-moving-demo'
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 interface DemoState {
   seedDay: ISODate
   data: DemoData
   startDriverDay: (moveId: string) => void
   resolveAlert: (alert: Alert) => void
+  /** Planifie (ou déplace) un dossier : date, équipe type, camion. */
+  assignMove: (moveId: string, plan: { date: ISODate; crewId: string; vehicleId: string }) => void
+  addAbsence: (absence: Omit<Absence, 'id'>) => void
+  removeAbsence: (id: string) => void
+  resolveConflict: (conflict: PlanConflict) => void
+  updateSettings: (patch: Partial<Settings>) => void
+  publishPlanning: (staffIds: string[]) => void
   resetDemo: () => void
+}
+
+const clamp = (v: number, min: number, max: number) => (Number.isFinite(v) ? Math.min(max, Math.max(min, Math.round(v))) : min)
+
+/** Bornes des paramètres : une saisie vide ou aberrante ne peut jamais casser les calculs. */
+export const SETTINGS_BOUNDS = {
+  hourlyCostCents: [1000, 10000],
+  kmCostCents: [0, 500],
+  fuelCentsPerLitre: [50, 500],
+  marginThresholdPct: [0, 80],
+} as const
+
+function sanitize(s: Settings): Settings {
+  const B = SETTINGS_BOUNDS
+  return {
+    hourlyCostCents: clamp(s.hourlyCostCents, ...B.hourlyCostCents),
+    fuelCentsPerLitre: clamp(s.fuelCentsPerLitre, ...B.fuelCentsPerLitre),
+    marginThresholdPct: clamp(s.marginThresholdPct, ...B.marginThresholdPct),
+    kmCostCents: Object.fromEntries(
+      Object.entries(s.kmCostCents).map(([k, v]) => [k, clamp(v, ...B.kmCostCents)]),
+    ) as Settings['kmCostCents'],
+  }
 }
 
 /** Lecture tolérante : un contenu corrompu est ignoré au lieu de provoquer une erreur. */
@@ -65,6 +95,38 @@ export const useDemo = create<DemoState>()(
         }))
       },
       resolveAlert: (alert) => set((s) => ({ data: fixAlert(s.data, alert, s.seedDay) })),
+      assignMove: (moveId, plan) =>
+        set((s) => {
+          const team = s.data.teams.find((t) => t.id === plan.crewId)
+          return {
+            data: {
+              ...s.data,
+              moves: s.data.moves.map((m) =>
+                m.id !== moveId
+                  ? m
+                  : {
+                      ...m,
+                      date: plan.date,
+                      crewId: plan.crewId,
+                      status: m.status === 'enCours' ? m.status : 'planifie',
+                      teamIds: team ? [...team.memberIds] : m.teamIds,
+                      vehicleIds: [plan.vehicleId, ...(m.liftUsed ? ['v-7'] : [])],
+                    },
+              ),
+            },
+          }
+        }),
+      addAbsence: (absence) =>
+        set((s) => {
+          const id = `ab-${s.data.absences.length + 1}-${absence.staffId}-${absence.from}`
+          const from = absence.from <= absence.to ? absence.from : absence.to
+          const to = absence.from <= absence.to ? absence.to : absence.from
+          return { data: { ...s.data, absences: [...s.data.absences, { ...absence, from, to, id }] } }
+        }),
+      removeAbsence: (id) => set((s) => ({ data: { ...s.data, absences: s.data.absences.filter((a) => a.id !== id) } })),
+      resolveConflict: (conflict) => set((s) => ({ data: applyFix(s.data, conflict) })),
+      updateSettings: (patch) => set((s) => ({ data: { ...s.data, settings: sanitize({ ...s.data.settings, ...patch }) } })),
+      publishPlanning: (staffIds) => set((s) => ({ data: { ...s.data, published: { at: new Date().toISOString(), staffIds } } })),
       resetDemo: () => set(fresh()),
     }),
     {
@@ -89,7 +151,9 @@ function isValidData(d: unknown): d is DemoData {
   return (
     !!x &&
     typeof x.company === 'object' &&
-    [x.staff, x.absences, x.vehicles, x.customers, x.moves].every((list) => Array.isArray(list) && list.length > 0)
+    typeof x.settings === 'object' &&
+    Array.isArray(x.absences) &&
+    [x.staff, x.teams, x.vehicles, x.customers, x.moves].every((list) => Array.isArray(list) && list.length > 0)
   )
 }
 

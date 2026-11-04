@@ -27,7 +27,8 @@ export function GerantHome() {
   const user = useViewUser('gerant')
   const [openAlert, setOpenAlert] = useState<Alert | null>(null)
 
-  const alerts = useMemo(() => deriveAlerts(data, today), [data, today])
+  // L'alerte « marge faible » apparaîtra avec l'écran Rentabilité (lot 6).
+  const alerts = useMemo(() => deriveAlerts(data, today).filter((a) => a.kind !== 'lowMargin'), [data, today])
   const todayMoves = movesOn(data, today)
 
   const month = today.slice(0, 7)

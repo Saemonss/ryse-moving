@@ -111,11 +111,20 @@ export interface Move {
   options: MoveOption[]
   priceCents: number
   depositCents: number
-  costCents: number
+  /** Équipe type choisie au planning (les personnes réellement affectées sont dans teamIds). */
+  crewId?: string
   teamIds: string[]
   vehicleIds: string[]
   note?: 'piano' | 'parking'
   cmr?: string
+  /** Durée prévue sur place + trajets, en heures. */
+  plannedHours: number
+  /** Durée réelle (dossiers terminés). */
+  actualHours?: number
+  /** Kilomètres parcourus : dépôt → départ → arrivée → dépôt. */
+  distanceKm: number
+  /** Monte-meubles utilisé (facturé seulement si l'option 'monteMeubles' figure au devis). */
+  liftUsed?: boolean
   requestedOn: ISODate
   visitOn?: ISODate
   quoteSentOn?: ISODate
@@ -130,8 +139,29 @@ export interface Move {
   damage?: Damage
 }
 
+/** Équipe type : un chef, ses équipiers, son camion habituel. */
+export interface Team {
+  id: string
+  leaderId: string
+  memberIds: string[]
+  defaultVehicleId: string
+  agencyId: string
+}
+
+/** Paramètres de calcul de la marge (modifiables par le gérant). Montants en centimes. */
+export interface Settings {
+  hourlyCostCents: number
+  kmCostCents: Record<VehicleKind, number>
+  fuelCentsPerLitre: number
+  marginThresholdPct: number
+}
+
 export interface DemoData {
   company: Company
+  settings: Settings
+  teams: Team[]
+  /** Dernière publication du planning aux équipes. */
+  published?: { at: string; staffIds: string[] }
   staff: Staff[]
   absences: Absence[]
   vehicles: Vehicle[]
@@ -139,7 +169,7 @@ export interface DemoData {
   moves: Move[]
 }
 
-export type AlertKind = 'conflict' | 'quote' | 'damage' | 'invoice' | 'inspection'
+export type AlertKind = 'conflict' | 'quote' | 'damage' | 'invoice' | 'inspection' | 'lowMargin'
 
 /** Les alertes sont calculées à partir des données (jamais stockées) : régler le problème les fait disparaître. */
 export interface Alert {
@@ -147,9 +177,30 @@ export interface Alert {
   kind: AlertKind
   tone: 'danger' | 'warning' | 'info'
   moveId?: string
-  otherMoveId?: string
   vehicleId?: string
-  suggestedVehicleId?: string
   suggestedDate?: ISODate
   days?: number
+  /** Nombre d'éléments concernés (ex. dossiers à marge faible). */
+  count?: number
+  /** Conflit de planning à l'origine de l'alerte (kind 'conflict'). */
+  conflict?: PlanConflict
+}
+
+export type ConflictKind = 'vehicleDouble' | 'personDouble' | 'personAbsent' | 'skillMissing' | 'overCapacity' | 'inspectionOverdue'
+
+/** Solution en un clic : remplacer (ou ajouter) une personne, ou remplacer un véhicule. */
+export type ConflictFix =
+  | { type: 'vehicle'; from: string; to: string }
+  | { type: 'staff'; from?: string; to: string }
+
+export interface PlanConflict {
+  id: string
+  kind: ConflictKind
+  moveId: string
+  date: ISODate
+  staffId?: string
+  vehicleId?: string
+  otherMoveId?: string
+  skill?: Skill
+  fix?: ConflictFix
 }

@@ -139,16 +139,10 @@ export const nl: Dictionary = {
     todoToInvoice: 'Afgeronde verhuizingen te factureren: {n}',
   },
   alerts: {
-    conflict: {
-      title: 'Zelfde wagen voor 2 ploegen, {day}',
-      text: '{vehicle} is gepland voor {a} en {b}.',
-      action: 'Oplossen',
-      modalTitle: 'Conflict met een wagen',
-      explain: 'De wagen {plate} ({kind}) is op {date} gepland voor twee verhuizingen:',
-      aiLoading: 'Vrije wagen op die dag zoeken…',
-      suggestion: 'Voorgestelde oplossing: de wagen {plate} ({kind}), vrij op die dag, toewijzen aan de verhuizing van {client}.',
-      apply: '{plate} toewijzen',
-      done: '{plate} toegewezen aan de verhuizing van {client}. Conflict opgelost.',
+    lowMargin: {
+      title: 'Lage marge op recente dossiers',
+      text: 'Dossiers onder de drempel van {pct} %: {n}',
+      action: 'Bekijken',
     },
     quote: {
       title: 'Offerte al {n} dagen zonder antwoord',
@@ -191,6 +185,34 @@ export const nl: Dictionary = {
       apply: 'Keuring reserveren op {date}',
       done: 'Technische keuring gereserveerd op {date}.',
     },
+  },
+  conflicts: {
+    title: {
+      vehicleDouble: 'Voertuig dubbel gepland',
+      personDouble: 'Persoon dubbel gepland',
+      personAbsent: 'Persoon afwezig',
+      skillMissing: 'Ontbrekende vaardigheid',
+      overCapacity: 'Wagen te klein',
+      inspectionOverdue: 'Technische keuring verlopen',
+    },
+    text: {
+      vehicleDouble: '{vehicle} is gepland voor {a} en voor {b}.',
+      personDouble: 'Dubbele toewijzing van {person}: {a} en {b}, op dezelfde dag.',
+      personAbsent: 'Afwezigheid van {person} ({reason}), terwijl deze persoon gepland is bij {a}.',
+      skillMissing: 'Niemand in de ploeg heeft de vaardigheid « {skill} » die nodig is bij {a}.',
+      overCapacity: '{volume} m³ te vervoeren bij {a}, voor slechts {capacity} m³ laadruimte.',
+      inspectionOverdue: 'Technische keuring van {vehicle} verlopen op {due}, vóór de verhuizing van {a}.',
+    },
+    fix: {
+      vehicle: 'Voorgestelde oplossing: {vehicle} nemen, vrij op die dag.',
+      replace: 'Voorgestelde oplossing: {from} vervangen door {to}, beschikbaar op die dag.',
+      add: 'Voorgestelde oplossing: {to} aan de ploeg toevoegen.',
+      none: 'Geen automatische oplossing op die dag (geen vrije wagen of ploeglid). Verplaats het dossier in de planning.',
+    },
+    dayTitle: '{title}, {day}',
+    resolve: 'Oplossen',
+    apply: 'Oplossing toepassen',
+    done: 'Conflict opgelost.',
   },
   chauffeur: {
     hello: 'Goedendag {name}',

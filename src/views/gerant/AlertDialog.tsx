@@ -1,6 +1,6 @@
 /*
  * Fenêtre de détail d'une alerte : explique la situation et propose UNE solution en un clic.
- * Pour un conflit de camion, la solution est « cherchée par l'IA » (simulée, ~1,3 s).
+ * S'il n'existe aucune solution automatique (ex. aucun camion libre), on l'explique au lieu d'afficher un bouton inutile.
  */
 import { useEffect, useState } from 'react'
 import { useI18n, type Lang } from '../../i18n'
@@ -11,9 +11,8 @@ import { useDemo } from '../../store/demoStore'
 import { Modal } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
 import { TextArea } from '../../ui/Field'
-import { StatusBadge } from '../../ui/StatusBadge'
-import { AiProcessing, useFakeAi } from '../../ui/AiProcessing'
 import { toast } from '../../ui/Toast'
+import { ConflictDetail } from '../shared/ConflictDetail'
 
 export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: () => void }) {
   const { t, lang } = useI18n()
@@ -21,23 +20,13 @@ export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: 
   const resolveAlert = useDemo((s) => s.resolveAlert)
   // On garde la dernière alerte affichée pendant la fermeture de la fenêtre.
   const [shown, setShown] = useState<Alert | null>(alert)
-  const ai = useFakeAi(true, 1300)
-  const { run, reset } = ai
   useEffect(() => {
-    if (!alert) {
-      reset() // évite d'afficher un instant l'ancienne suggestion au prochain conflit
-      return
-    }
-    setShown(alert)
-    if (alert.kind === 'conflict') run()
-    else reset()
-  }, [alert, run, reset])
+    if (alert) setShown(alert)
+  }, [alert])
   if (!shown) return null
 
   const { title, apply, done } = labels(shown, data, t, lang)
-  // Pas de solution trouvée (aucun camion libre) : on n'affiche pas de bouton qui ne ferait rien.
-  const canApply = shown.kind !== 'conflict' || !!shown.suggestedVehicleId
-  const aiReady = (shown.kind !== 'conflict' || ai.status === 'done') && canApply
+  const canApply = shown.kind !== 'conflict' || !!shown.conflict?.fix
   return (
     <Modal
       open={!!alert}
@@ -46,9 +35,9 @@ export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: 
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
-            {t('common.cancel')}
+            {t(canApply ? 'common.cancel' : 'common.close')}
           </Button>
-          {aiReady && (
+          {canApply && (
             <Button
               onClick={() => {
                 resolveAlert(shown)
@@ -62,78 +51,33 @@ export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: 
         </>
       }
     >
-      <AlertBody alert={shown} data={data} aiReady={aiReady} />
+      <AlertBody alert={shown} data={data} />
     </Modal>
   )
 }
 
 function labels(alert: Alert, data: DemoData, t: ReturnType<typeof useI18n>['t'], lang: Lang) {
-  const move = byId(data.moves, alert.moveId)
-  const other = byId(data.moves, alert.otherMoveId)
-  const client = byId(data.customers, (alert.kind === 'conflict' ? other : move)?.customerId)?.name ?? ''
-  const plate = byId(data.vehicles, alert.suggestedVehicleId)?.plate ?? ''
   const date = alert.suggestedDate ? fmtDate(alert.suggestedDate, lang, 'weekday') : ''
+  const move = byId(data.moves, alert.moveId)
+  const client = byId(data.customers, move?.customerId)?.name ?? ''
   const k = alert.kind
-  if (k === 'conflict') return { title: t('alerts.conflict.modalTitle'), apply: t('alerts.conflict.apply', { plate }), done: t('alerts.conflict.done', { plate, client }) }
+  if (k === 'conflict' || k === 'lowMargin')
+    return { title: alert.conflict ? t(`conflicts.title.${alert.conflict.kind}`) : '', apply: t('conflicts.apply'), done: t('conflicts.done') }
   if (k === 'inspection') return { title: t('alerts.inspection.modalTitle'), apply: t('alerts.inspection.apply', { date }), done: t('alerts.inspection.done', { date }) }
   return { title: t(`alerts.${k}.modalTitle`), apply: t(`alerts.${k}.apply`), done: t(`alerts.${k}.done`, { client }) }
 }
 
-function AlertBody({ alert, data, aiReady }: { alert: Alert; data: DemoData; aiReady: boolean }) {
+function AlertBody({ alert, data }: { alert: Alert; data: DemoData }) {
   const { t, lang } = useI18n()
   const move = byId(data.moves, alert.moveId)
   const customer = move ? byId(data.customers, move.customerId) : undefined
   const client = customer?.name ?? ''
   const vehicle = byId(data.vehicles, alert.vehicleId)
   switch (alert.kind) {
-    case 'conflict': {
-      const other = byId(data.moves, alert.otherMoveId)
-      const suggested = byId(data.vehicles, alert.suggestedVehicleId)
-      const rows = [move, other].filter((m): m is NonNullable<typeof m> => !!m)
-      return (
-        <div className="space-y-4">
-          <p>
-            {t('alerts.conflict.explain', {
-              plate: vehicle?.plate ?? '',
-              kind: vehicle ? t(`vehicleKind.${vehicle.kind}`) : '',
-              date: move ? fmtDate(move.date, lang, 'weekday') : '',
-            })}
-          </p>
-          <ul className="divide-y divide-line rounded-xl border border-line">
-            {rows.map((m) => {
-              const chief = byId(data.staff, m.teamIds[0])
-              return (
-                <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                  <div>
-                    <p className="font-semibold">{byId(data.customers, m.customerId)?.name}</p>
-                    <p className="text-sm text-muted">
-                      {m.startTime} · {t(`moveType.${m.type}`)} · {t('common.volume', { n: m.volumeM3 })}
-                    </p>
-                  </div>
-                  {chief && <span className="text-sm text-muted">{fullName(chief)}</span>}
-                </li>
-              )
-            })}
-          </ul>
-          {!aiReady ? (
-            <AiProcessing label={t('alerts.conflict.aiLoading')} />
-          ) : (
-            suggested && (
-              <div className="rounded-xl bg-surface-2/60 px-4 py-3 animate-[rm-fade-up_200ms_var(--ease-out)]">
-                <StatusBadge tone="accent">{t('ai.tag')}</StatusBadge>
-                <p className="mt-2">
-                  {t('alerts.conflict.suggestion', {
-                    plate: suggested.plate,
-                    kind: t(`vehicleKind.${suggested.kind}`),
-                    client: byId(data.customers, other?.customerId ?? '')?.name ?? '',
-                  })}
-                </p>
-              </div>
-            )
-          )}
-        </div>
-      )
-    }
+    case 'conflict':
+      return alert.conflict ? <ConflictDetail conflict={alert.conflict} /> : null
+    case 'lowMargin':
+      return null
     case 'quote':
       return (
         <div className="space-y-4">

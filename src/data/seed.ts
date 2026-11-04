@@ -8,8 +8,9 @@
 import { CITIES, COMPANY_NAMES, FIRST_NAMES, LAST_NAMES, STREETS } from './lists'
 import { createRandom, type Random } from './random'
 import { addDays, fromISO } from './dates'
+import { distanceKm, plannedHoursFor } from './geo'
 import type {
-  Absence, Company, Customer, DemoData, Gender, ISODate, Move, MoveOption, MoveStatus, MoveType, Site, Staff, Vehicle,
+  Absence, Company, Customer, DemoData, Gender, ISODate, Move, MoveOption, MoveStatus, MoveType, Settings, Site, Staff, Team, Vehicle,
 } from './types'
 
 const SEED = 20261104
@@ -43,16 +44,25 @@ const STAFF: S[] = [
   ['s-antoine', 'Antoine', 'Moreau', 'm', 'demenageur', ['emballage'], 'a-lille'],
 ]
 
-/** Équipes habituelles et leur camion. */
-const CREWS = {
-  A: { team: ['s-didier', 's-kevin', 's-bram'], vehicle: 'v-2' },
-  B: { team: ['s-karim', 's-pieter', 's-luca'], vehicle: 'v-1' },
-  C: { team: ['s-youssef', 's-mehdi'], vehicle: 'v-3' },
-  L: { team: ['s-jerome', 's-antoine'], vehicle: 'v-8' },
-} as const
+/** Équipes types et leur camion habituel. */
+export const TEAMS: Team[] = [
+  { id: 't-a', leaderId: 's-didier', memberIds: ['s-didier', 's-kevin', 's-bram'], defaultVehicleId: 'v-2', agencyId: 'a-nivelles' },
+  { id: 't-b', leaderId: 's-karim', memberIds: ['s-karim', 's-pieter', 's-luca'], defaultVehicleId: 'v-1', agencyId: 'a-nivelles' },
+  { id: 't-c', leaderId: 's-youssef', memberIds: ['s-youssef', 's-mehdi'], defaultVehicleId: 'v-3', agencyId: 'a-nivelles' },
+  { id: 't-l', leaderId: 's-jerome', memberIds: ['s-jerome', 's-antoine'], defaultVehicleId: 'v-8', agencyId: 'a-lille' },
+]
+const CREWS = { A: 't-a', B: 't-b', C: 't-c', L: 't-l' } as const
 type Crew = keyof typeof CREWS
 
-type Special = 'late' | 'damage' | 'conflictA' | 'conflictB' | 'quote6' | 'karim' | 'client' | 'started'
+/** Paramètres de départ du calcul de marge (valeurs réalistes pour la Belgique, modifiables dans Paramètres). */
+export const DEFAULT_SETTINGS: Settings = {
+  hourlyCostCents: 3200,
+  kmCostCents: { camion20: 38, camion40: 52, porteurHayon: 45, utilitaire: 25, monteMeubles: 30 },
+  fuelCentsPerLitre: 175,
+  marginThresholdPct: 25,
+}
+
+type Special = 'late' | 'damage' | 'conflictA' | 'conflictB' | 'quote6' | 'karim' | 'client' | 'started' | 'lowDistance' | 'overHours' | 'liftUnbilled'
 interface PlanRow {
   status: MoveStatus
   type: MoveType
@@ -71,24 +81,24 @@ const PLAN: PlanRow[] = [
   { status: 'paye', type: 'appartement', day: -24, from: 'ixelles', to: 'uccle', vol: 24, crew: 'A' },
   { status: 'facture', type: 'maison', day: -38, from: 'wavre', to: 'namur', vol: 48, crew: 'B', special: 'late' },
   { status: 'paye', type: 'bureaux', day: -20, from: 'bruxelles', to: 'schaerbeek', vol: 36, crew: 'A', opts: ['emballage'] },
-  { status: 'paye', type: 'international', day: -15, from: 'uccle', to: 'paris11', vol: 42, crew: 'B' },
+  { status: 'paye', type: 'international', day: -15, from: 'uccle', to: 'paris11', vol: 42, crew: 'B', special: 'lowDistance' },
   { status: 'paye', type: 'appartement', day: -12, from: 'liege', to: 'liege', vol: 30, crew: 'C' },
   { status: 'facture', type: 'maison', day: -9, from: 'namur', to: 'wavre', vol: 52, crew: 'A', opts: ['emballage'] },
   { status: 'facture', type: 'appartement', day: -8, from: 'lille', to: 'roubaix', vol: 26, crew: 'L' },
   { status: 'termine', type: 'debarras', day: -6, from: 'schaerbeek', vol: 18, crew: 'C' },
   { status: 'termine', type: 'maison', day: -5, from: 'nivelles', to: 'bruxelles', vol: 50, crew: 'A', special: 'damage' },
-  { status: 'termine', type: 'appartement', day: -4, from: 'mechelen', to: 'leuven', vol: 32, crew: 'B' },
+  { status: 'termine', type: 'appartement', day: -4, from: 'mechelen', to: 'leuven', vol: 32, crew: 'B', special: 'liftUnbilled' },
   { status: 'termine', type: 'gardeMeuble', day: -3, from: 'ixelles', vol: 20, crew: 'C', opts: ['gardeMeuble'] },
   { status: 'facture', type: 'international', day: -2, from: 'lille', to: 'liege', vol: 38, crew: 'L' },
-  { status: 'termine', type: 'bureaux', day: -1, from: 'bruxelles', to: 'bruxelles', vol: 40, crew: 'B', opts: ['emballage'] },
+  { status: 'termine', type: 'bureaux', day: -1, from: 'bruxelles', to: 'bruxelles', vol: 40, crew: 'B', opts: ['emballage'], special: 'overHours' },
   { status: 'enCours', type: 'appartement', day: 0, from: 'ixelles', to: 'schaerbeek', vol: 28, crew: 'A', special: 'started', time: '07:00' },
-  { status: 'planifie', type: 'maison', day: 0, from: 'waterloo', to: 'nivelles', vol: 46, crew: 'B', special: 'karim', time: '07:30' },
-  { status: 'planifie', type: 'appartement', day: 0, from: 'lille', to: 'lille', vol: 22, crew: 'L', time: '08:30' },
+  { status: 'planifie', type: 'maison', day: 0, from: 'waterloo', to: 'nivelles', vol: 38, crew: 'B', special: 'karim', time: '07:30' },
+  { status: 'planifie', type: 'appartement', day: 0, from: 'lille', to: 'lille', vol: 18, crew: 'L', time: '08:30' },
   { status: 'planifie', type: 'appartement', day: 1, from: 'uccle', to: 'waterloo', vol: 30, crew: 'A' },
   { status: 'planifie', type: 'maison', day: 2, from: 'namur', to: 'bruxelles', vol: 40, crew: 'B', special: 'conflictA' },
   { status: 'planifie', type: 'bureaux', day: 2, from: 'bruxelles', to: 'ixelles', vol: 34, crew: 'A', special: 'conflictB', time: '08:00' },
   { status: 'planifie', type: 'international', day: 3, from: 'bruxelles', to: 'paris15', vol: 40, crew: 'B' },
-  { status: 'planifie', type: 'appartement', day: 4, from: 'liege', to: 'liege', vol: 24, crew: 'C', opts: ['monteMeubles'] },
+  { status: 'planifie', type: 'appartement', day: 4, from: 'wavre', to: 'wavre', vol: 24, crew: 'A', opts: ['monteMeubles'] },
   { status: 'planifie', type: 'appartement', day: 6, from: 'bruxelles', to: 'wavre', vol: 34, crew: 'A' },
   { status: 'devisSigne', type: 'maison', day: 7, from: 'wavre', to: 'namur', vol: 58, special: 'client', opts: ['emballage'] },
   { status: 'devisSigne', type: 'gardeMeuble', day: 8, from: 'uccle', vol: 16, opts: ['gardeMeuble'] },
@@ -105,7 +115,7 @@ const PRICING: Record<MoveType, [perM3: number, base: number]> = {
   appartement: [3800, 35000],
   maison: [3600, 45000],
   bureaux: [4200, 60000],
-  international: [5500, 90000],
+  international: [7000, 120000],
   gardeMeuble: [2500, 20000],
   debarras: [3000, 15000],
 }
@@ -206,8 +216,8 @@ export function createSeed(today: ISODate): DemoData {
     if (from.floor >= 2 && !from.elevator) price *= 1.08
     if (opts.includes('emballage')) price *= 1.12
     if (opts.includes('monteMeubles')) price += 29000
+    if (row.special === 'lowDistance') price *= 0.7 // prix consenti trop bas pour la distance
     const priceCents = Math.round(price / 1000) * 1000
-    const costCents = Math.round((priceCents * (0.62 + rnd.next() * 0.14)) / 100) * 100
     const signed = SIGNED_OR_LATER.includes(row.status)
 
     // Étapes du dossier, toujours cohérentes avec aujourd'hui
@@ -230,9 +240,14 @@ export function createSeed(today: ISODate): DemoData {
       requestedOn = addDays(quoteSentOn, -5)
     }
 
-    const crew = row.crew ? CREWS[row.crew] : undefined
-    const vehicleIds: string[] = crew ? [row.special === 'conflictB' ? 'v-1' : crew.vehicle] : []
-    if (opts.includes('monteMeubles')) vehicleIds.push('v-7')
+    const crew = row.crew ? TEAMS.find((t) => t.id === CREWS[row.crew!]) : undefined
+    const vehicleIds: string[] = crew ? [row.special === 'conflictB' ? 'v-1' : crew.defaultVehicleId] : []
+    const liftUsed = opts.includes('monteMeubles') || row.special === 'liftUnbilled'
+    if (liftUsed && crew) vehicleIds.push('v-7')
+    const agencyId = crew?.agencyId ?? (fromCity.country === 'FR' ? 'a-lille' : 'a-nivelles')
+    const km = distanceKm(agencyId === 'a-lille' ? 'lille' : 'nivelles', row.from, row.to)
+    const plannedHours = plannedHoursFor(row.vol, km)
+    const done = ['termine', 'facture', 'paye'].includes(row.status)
 
     const move: Move = {
       id,
@@ -248,9 +263,13 @@ export function createSeed(today: ISODate): DemoData {
       options: opts,
       priceCents,
       depositCents: signed ? Math.round((priceCents * 0.3) / 1000) * 1000 : 0,
-      costCents,
-      teamIds: crew ? [...crew.team] : [],
+      crewId: crew?.id,
+      teamIds: crew ? [...crew.memberIds] : [],
       vehicleIds,
+      plannedHours,
+      actualHours: done ? Math.round(plannedHours * (row.special === 'overHours' ? 1.9 : 0.92 + rnd.next() * 0.16) * 2) / 2 : undefined,
+      distanceKm: km,
+      liftUsed: liftUsed || undefined,
       requestedOn,
       visitOn,
       quoteSentOn,
@@ -277,5 +296,5 @@ export function createSeed(today: ISODate): DemoData {
     .sort((a, b) => (a.invoicedOn! < b.invoicedOn! ? -1 : 1))
     .forEach((m, k) => (m.invoiceNumber = `F-${year}-${String(87 + k).padStart(4, '0')}`))
 
-  return { company: COMPANY, staff, absences, vehicles, customers, moves }
+  return { company: COMPANY, settings: DEFAULT_SETTINGS, teams: TEAMS, staff, absences, vehicles, customers, moves }
 }

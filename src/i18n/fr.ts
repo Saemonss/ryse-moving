@@ -134,16 +134,10 @@ export const fr = {
     todoToInvoice: 'Déménagements terminés à facturer : {n}',
   },
   alerts: {
-    conflict: {
-      title: 'Même camion pour 2 équipes, {day}',
-      text: '{vehicle} est prévu pour {a} et {b}.',
-      action: 'Résoudre',
-      modalTitle: 'Conflit de camion',
-      explain: 'Le camion {plate} ({kind}) est prévu le {date} pour deux déménagements :',
-      aiLoading: "Recherche d'un camion libre ce jour-là…",
-      suggestion: 'Solution proposée : affecter le camion {plate} ({kind}), libre ce jour-là, au déménagement de {client}.',
-      apply: 'Affecter {plate}',
-      done: '{plate} affecté au déménagement de {client}. Conflit résolu.',
+    lowMargin: {
+      title: 'Marge faible sur des dossiers récents',
+      text: 'Dossiers sous le seuil de {pct} % : {n}',
+      action: 'Voir',
     },
     quote: {
       title: 'Devis sans réponse depuis {n} jours',
@@ -186,6 +180,34 @@ export const fr = {
       apply: 'Réserver le contrôle le {date}',
       done: 'Contrôle technique réservé le {date}.',
     },
+  },
+  conflicts: {
+    title: {
+      vehicleDouble: 'Véhicule prévu deux fois',
+      personDouble: 'Personne prévue deux fois',
+      personAbsent: 'Personne absente',
+      skillMissing: 'Compétence manquante',
+      overCapacity: 'Camion trop petit',
+      inspectionOverdue: 'Contrôle technique dépassé',
+    },
+    text: {
+      vehicleDouble: '{vehicle} est prévu pour {a} et pour {b}.',
+      personDouble: 'Double affectation de {person} : {a} et {b}, le même jour.',
+      personAbsent: 'Absence de {person} ({reason}), alors que cette personne est prévue chez {a}.',
+      skillMissing: "Aucun membre de l'équipe n'a la compétence « {skill} » nécessaire chez {a}.",
+      overCapacity: '{volume} m³ à transporter chez {a}, pour seulement {capacity} m³ de camion.',
+      inspectionOverdue: 'Contrôle technique de {vehicle} échu le {due}, avant le déménagement de {a}.',
+    },
+    fix: {
+      vehicle: 'Solution proposée : prendre {vehicle}, libre ce jour-là.',
+      replace: 'Solution proposée : remplacer {from} par {to}, disponible ce jour-là.',
+      add: "Solution proposée : ajouter {to} à l'équipe.",
+      none: 'Pas de solution automatique ce jour-là (aucun camion ou équipier libre). Déplacez le dossier dans le planning.',
+    },
+    dayTitle: '{title}, {day}',
+    resolve: 'Résoudre',
+    apply: 'Appliquer la solution',
+    done: 'Conflit résolu.',
   },
   chauffeur: {
     hello: 'Bonjour {name}',
