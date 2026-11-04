@@ -1,7 +1,7 @@
 /*
  * Signature au doigt (ou à la souris sur PC). Renvoie une image PNG, ou null tant que rien n'est signé.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { useI18n } from '../../i18n'
 
@@ -10,6 +10,7 @@ export function SignaturePad({ onChange }: { onChange: (image: string | null) =>
   const canvas = useRef<HTMLCanvasElement>(null)
   const drawing = useRef(false)
   const drawn = useRef(false)
+  const [hasInk, setHasInk] = useState(false)
 
   useEffect(() => {
     const c = canvas.current
@@ -35,6 +36,7 @@ export function SignaturePad({ onChange }: { onChange: (image: string | null) =>
     const c = canvas.current
     c?.getContext('2d')?.clearRect(0, 0, c.width, c.height)
     drawn.current = false
+    setHasInk(false)
     onChange(null)
   }
 
@@ -64,17 +66,22 @@ export function SignaturePad({ onChange }: { onChange: (image: string | null) =>
           }}
           onPointerUp={(e) => {
             drawing.current = false
-            if (drawn.current) onChange(e.currentTarget.toDataURL('image/png'))
+            if (drawn.current) {
+              setHasInk(true)
+              onChange(e.currentTarget.toDataURL('image/png'))
+            }
           }}
         />
         <span className="pointer-events-none absolute bottom-3 left-4 right-4 border-b border-line" aria-hidden="true" />
       </div>
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-[15px] text-muted">{t('terrain.mission.signHere')}</p>
-        <button type="button" onClick={clear} className="flex min-h-12 items-center gap-1.5 rounded-xl px-3 text-[16px] font-semibold text-accent">
-          <RotateCcw size={18} aria-hidden="true" />
-          {t('terrain.mission.clear')}
-        </button>
+        {hasInk && (
+          <button type="button" onClick={clear} className="flex min-h-12 items-center gap-1.5 rounded-xl px-3 text-[16px] font-semibold text-accent">
+            <RotateCcw size={18} aria-hidden="true" />
+            {t('terrain.mission.clear')}
+          </button>
+        )}
       </div>
     </div>
   )

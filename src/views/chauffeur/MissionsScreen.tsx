@@ -216,9 +216,15 @@ function ExpenseSheet({ open, onClose, moveId }: { open: boolean; onClose: () =>
           {amount ? fmtMoney(cents, lang) : '— €'}
         </p>
         <Keypad value={amount} onChange={setAmount} decimal maxLength={7} />
+        {(!kind || !photo || cents <= 0) && (
+          <p id="expense-hint" className="text-center text-[15px] font-medium text-muted">
+            {t('terrain.expense.hint')}
+          </p>
+        )}
         <Button
           size="xl"
           icon={CircleCheck}
+          aria-describedby={!kind || !photo || cents <= 0 ? 'expense-hint' : undefined}
           disabled={!kind || !photo || cents <= 0}
           onClick={() => {
             if (!kind || !photo) return

@@ -118,6 +118,7 @@ export function MissionFlow({ moveId, onBack, banner }: { moveId: string; onBack
                 <button
                   key={room}
                   type="button"
+                  data-room={room}
                   onClick={() => setPicking(room)}
                   className="overflow-hidden rounded-2xl bg-white text-left shadow-card ring-1 ring-line active:scale-[0.97]"
                 >
@@ -279,9 +280,15 @@ function DamageSheet({ open, onClose, onSave }: { open: boolean; onClose: () => 
             columns={1}
             options={(['leger', 'moyen', 'grave'] as const).map((v) => ({ value: v, label: t(`terrain.severity.${v}`) }))}
           />
+          {(!photo || !item || !type || !severity) && (
+            <p id="damage-hint" className="text-center text-[15px] font-medium text-muted">
+              {t('terrain.damage.hint')}
+            </p>
+          )}
           <Button
             size="xl"
             icon={CircleCheck}
+            aria-describedby={!photo || !item || !type || !severity ? 'damage-hint' : undefined}
             disabled={!photo || !item || !type || !severity}
             onClick={() => {
               if (!photo || !item || !type || !severity) return

@@ -514,6 +514,7 @@ export const fr = {
       severity: 'Gravité',
       save: 'Enregistrer le dégât',
       saved: 'Dégât enregistré. Le bureau sera prévenu.',
+      hint: 'Photo, objet, type et gravité : les 4 sont nécessaires.',
     },
     expense: {
       button: 'Frais',
@@ -524,6 +525,7 @@ export const fr = {
       amount: 'Montant',
       save: 'Enregistrer le frais',
       saved: 'Frais enregistré : {amount}',
+      hint: 'Choisissez le type, prenez le ticket en photo et tapez le montant.',
       list: 'Frais du jour',
     },
     pause: {
@@ -599,6 +601,7 @@ export const fr = {
     newValue: 'Nouvelle valeur',
     save: 'Enregistrer la correction',
     saved: 'Correction enregistrée. La trace est conservée.',
+    hint: 'Tapez la nouvelle valeur (un nombre positif).',
     marginOf: 'Marge du dossier {ref} : {pct} %',
     back: 'Accueil',
     notFound: 'Journée introuvable.',

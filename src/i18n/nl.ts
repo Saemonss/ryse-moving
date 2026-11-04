@@ -519,6 +519,7 @@ export const nl: Dictionary = {
       severity: 'Ernst',
       save: 'Schade registreren',
       saved: 'Schade geregistreerd. Het kantoor wordt verwittigd.',
+      hint: 'Foto, voorwerp, soort en ernst: alle 4 zijn nodig.',
     },
     expense: {
       button: 'Kosten',
@@ -529,6 +530,7 @@ export const nl: Dictionary = {
       amount: 'Bedrag',
       save: 'Kost registreren',
       saved: 'Kost geregistreerd: {amount}',
+      hint: 'Kies het soort, neem het ticket op de foto en typ het bedrag.',
       list: 'Kosten van vandaag',
     },
     pause: {
@@ -604,6 +606,7 @@ export const nl: Dictionary = {
     newValue: 'Nieuwe waarde',
     save: 'Correctie opslaan',
     saved: 'Correctie opgeslagen. Het spoor blijft bewaard.',
+    hint: 'Typ de nieuwe waarde (een positief getal).',
     marginOf: 'Marge van dossier {ref}: {pct} %',
     back: 'Start',
     notFound: 'Dag niet gevonden.',

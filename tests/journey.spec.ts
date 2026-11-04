@@ -5,6 +5,7 @@
  * 5. Karim commence sa journée ; 6. réinitialisation → retour exact à l'état de départ.
  */
 import { demoData, expect, openFresh, test } from './fixtures'
+import { toMissions } from './driver'
 
 test('Parcours : alertes, affectation, absence et conflit, paramètre, journée chauffeur, puis réinitialisation', async ({ page }) => {
   await openFresh(page, 'gerant', 'fr')
@@ -24,6 +25,7 @@ test('Parcours : alertes, affectation, absence et conflit, paramètre, journée 
     const apply = page.locator('dialog[open] footer button').nth(1)
     await expect(apply).toBeVisible({ timeout: 4000 })
     await apply.click()
+    if (!/#\/gerant$/.test(page.url())) await page.goto('/#/gerant') // le dégât ouvre le dossier litige
     await expect(page.locator('[data-toast]').last()).toBeVisible()
     await expect(alertActions).toHaveCount(i - 1)
   }
@@ -64,15 +66,15 @@ test('Parcours : alertes, affectation, absence et conflit, paramètre, journée 
   await page.getByRole('button', { name: 'Réinitialiser', exact: true }).click()
   await page.keyboard.press('3')
   await expect(page).toHaveURL(/#\/chauffeur$/)
-  await page.getByRole('button', { name: 'Commencer ma journée' }).click()
-  await expect(page.getByText(/Journée commencée à/).first()).toBeVisible()
+  await toMissions(page) // connexion, début de journée, contrôle du camion
+  await expect(page.getByText('Mes missions du jour')).toBeVisible()
   expect(await demoData(page)).not.toEqual(start)
 
   // 6. Réinitialisation par le menu présentateur → retour exact à l'état de départ
   await page.getByRole('button', { name: 'Menu présentateur' }).click()
   await page.getByRole('button', { name: 'Réinitialiser la démo' }).click()
   await page.getByRole('button', { name: 'Réinitialiser', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Commencer ma journée' })).toBeVisible()
+  await expect(page.getByText('Qui êtes-vous ?')).toBeVisible()
   expect(await demoData(page)).toEqual(start)
   await page.keyboard.press('1')
   await expect(alertActions).toHaveCount(6)

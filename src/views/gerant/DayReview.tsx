@@ -294,6 +294,7 @@ function CorrectDialog({ day, open, onClose }: { day: DriverDay; open: boolean; 
           </Button>
           <Button
             disabled={!valid}
+            aria-describedby={valid ? undefined : 'correct-hint'}
             onClick={() => {
               correctDay(day.id, field, current, n)
               toast(t('review.saved'))
@@ -325,6 +326,11 @@ function CorrectDialog({ day, open, onClose }: { day: DriverDay; open: boolean; 
             placeholder={fmtNumber(current, lang, 2)}
             className="tabular h-11 w-full rounded-xl border border-line bg-white px-3.5 text-[15px] shadow-card focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent-pale/60"
           />
+          {!valid && (
+            <p id="correct-hint" className="mt-1.5 text-[13px] text-muted">
+              {t('review.hint')}
+            </p>
+          )}
         </div>
       </div>
     </Modal>

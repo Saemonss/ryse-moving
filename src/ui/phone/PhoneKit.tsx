@@ -35,14 +35,15 @@ interface PhoneScreenProps {
 
 export function PhoneScreen({ now, title, progress, onBack, action, secondary, children, banner }: PhoneScreenProps) {
   const { t } = useI18n()
-  // Anti double appui : le MÊME bouton appuyé deux fois en moins de 0,7 s n'agit qu'une fois
-  // (le bouton de l'écran suivant, lui, répond tout de suite).
-  const last = useRef<{ label: string; at: number } | null>(null)
+  // Anti double appui : après chaque appui, le bouton fait une courte pause (0,4 s) ; un second appui trop rapide
+  // (double tap) est ignoré, même si le bouton affiche déjà l'étape suivante.
+  const [cooling, setCooling] = useState(false)
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
   const run = () => {
-    if (!action || action.disabled) return
-    const now = Date.now()
-    if (last.current && last.current.label === action.label && now - last.current.at < 700) return
-    last.current = { label: action.label, at: now }
+    if (!action || action.disabled || cooling) return
+    setCooling(true)
+    timer.current = window.setTimeout(() => setCooling(false), 400)
     action.onClick()
   }
   return (
@@ -87,8 +88,19 @@ export function PhoneScreen({ now, title, progress, onBack, action, secondary, c
           {secondary && <div className="flex gap-2">{secondary}</div>}
           {action && (
             <>
-              {action.disabled && action.hint && <p className="text-center text-[15px] font-medium text-muted">{action.hint}</p>}
-              <Button size="xl" icon={action.icon} onClick={run} disabled={action.disabled}>
+              {action.disabled && action.hint && (
+                <p id="phone-action-hint" className="text-center text-[15px] font-medium text-muted">
+                  {action.hint}
+                </p>
+              )}
+              <Button
+                size="xl"
+                icon={action.icon}
+                onClick={run}
+                disabled={action.disabled || cooling}
+                aria-busy={cooling || undefined}
+                aria-describedby={action.disabled && action.hint ? 'phone-action-hint' : undefined}
+              >
                 {action.label}
               </Button>
             </>
@@ -177,7 +189,8 @@ export function Keypad({ value, onChange, maxLength = 6, decimal = false }: { va
     if (decimal && value.includes(',') && value.split(',')[1]!.length >= 2) return
     onChange(value + k)
   }
-  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', decimal ? ',' : '', '0', 'del']
+  // « Effacer » n'apparaît que s'il y a quelque chose à effacer (jamais de bouton sans effet)
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', decimal ? ',' : '', '0', value ? 'del' : '']
   return (
     <div className="grid grid-cols-3 gap-2">
       {keys.map((k, i) =>
@@ -187,6 +200,7 @@ export function Keypad({ value, onChange, maxLength = 6, decimal = false }: { va
           <button
             key={k}
             type="button"
+            data-crawl-sample
             onClick={() => press(k)}
             aria-label={k === 'del' ? t('terrain.keypad.erase') : k}
             className="grid h-16 place-items-center rounded-2xl bg-white text-[28px] font-semibold text-ink shadow-card ring-1 ring-line transition-transform duration-100 active:scale-[0.95] active:bg-surface-2"

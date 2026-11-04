@@ -2,6 +2,7 @@
  * Robustesse : situations qui ne doivent jamais casser la démo en rendez-vous.
  */
 import { expect, openFresh, test } from './fixtures'
+import { login } from './driver'
 
 test('Données sauvegardées un autre jour → données de départ du jour', async ({ page }) => {
   await openFresh(page, 'gerant', 'fr')
@@ -96,9 +97,11 @@ for (const [i, day] of ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'same
       const apply = page.locator('dialog[open] footer button').nth(1)
       await expect(apply).toBeVisible({ timeout: 4000 })
       await apply.click()
+    if (!/#\/gerant$/.test(page.url())) await page.goto('/#/gerant') // le dégât ouvre le dossier litige
       await expect(actions).toHaveCount(n - 1)
     }
     await page.keyboard.press('3')
+    await login(page)
     await expect(page.getByRole('button', { name: 'Commencer ma journée' })).toBeVisible()
   })
 }
