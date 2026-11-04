@@ -12,6 +12,7 @@ import { CharteView } from '../views/charte/CharteView'
 import { GerantHome } from '../views/gerant/GerantHome'
 import { MovesList } from '../views/gerant/MovesList'
 import { MoveFile } from '../views/gerant/MoveFile'
+import { GerantPlanning } from '../views/gerant/PlanningScreen'
 import { PlanificateurHome } from '../views/planificateur/PlanificateurHome'
 import { ChauffeurHome } from '../views/chauffeur/ChauffeurHome'
 import { CommercialHome } from '../views/commercial/CommercialHome'
@@ -29,7 +30,7 @@ type Screen = (props: { param?: string }) => React.JSX.Element
 
 /** Composant de chaque écran : SCREENS[vue][ecran]. Les écrans pas encore prêts n'y figurent pas. */
 const SCREENS: Record<ViewId, Record<string, Screen>> = {
-  gerant: { accueil: GerantHome, demenagements: MovesList, dossier: MoveFile },
+  gerant: { accueil: GerantHome, demenagements: MovesList, dossier: MoveFile, planning: GerantPlanning },
   planificateur: { accueil: PlanificateurHome },
   chauffeur: { accueil: ChauffeurHome },
   commercial: { accueil: CommercialHome },

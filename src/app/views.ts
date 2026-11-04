@@ -40,7 +40,7 @@ export const VIEWS: ViewDef[] = [
       home,
       { id: 'demenagements', icon: ClipboardList, label: 'menu.demenagements', menu: true, ready: true },
       { id: 'dossier', icon: FileText, label: 'menu.dossier', menu: false, ready: true },
-      { id: 'planning', icon: CalendarRange, label: 'menu.planning', menu: true, ready: false },
+      { id: 'planning', icon: CalendarRange, label: 'menu.planning', menu: true, ready: true },
       { id: 'equipe', icon: Users, label: 'menu.equipe', menu: true, ready: false },
       { id: 'flotte', icon: Truck, label: 'menu.flotte', menu: true, ready: false },
       { id: 'rentabilite', icon: ChartColumn, label: 'menu.rentabilite', menu: true, ready: false },
