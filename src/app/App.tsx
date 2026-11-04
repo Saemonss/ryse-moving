@@ -13,6 +13,10 @@ import { GerantHome } from '../views/gerant/GerantHome'
 import { MovesList } from '../views/gerant/MovesList'
 import { MoveFile } from '../views/gerant/MoveFile'
 import { GerantPlanning } from '../views/gerant/PlanningScreen'
+import { TeamScreen } from '../views/gerant/TeamScreen'
+import { FleetScreen } from '../views/gerant/FleetScreen'
+import { ProfitScreen } from '../views/gerant/ProfitScreen'
+import { SettingsScreen } from '../views/gerant/SettingsScreen'
 import { PlanificateurPlanning } from '../views/planificateur/PlanningScreen'
 import { AbsencesScreen } from '../views/planificateur/AbsencesScreen'
 import { ToPlanScreen } from '../views/planificateur/ToPlanScreen'
@@ -32,7 +36,16 @@ type Screen = (props: { param?: string }) => React.JSX.Element
 
 /** Composant de chaque écran : SCREENS[vue][ecran]. Les écrans pas encore prêts n'y figurent pas. */
 const SCREENS: Record<ViewId, Record<string, Screen>> = {
-  gerant: { accueil: GerantHome, demenagements: MovesList, dossier: MoveFile, planning: GerantPlanning },
+  gerant: {
+    accueil: GerantHome,
+    demenagements: MovesList,
+    dossier: MoveFile,
+    planning: GerantPlanning,
+    equipe: TeamScreen,
+    flotte: FleetScreen,
+    rentabilite: ProfitScreen,
+    parametres: SettingsScreen,
+  },
   planificateur: { planning: PlanificateurPlanning, absences: AbsencesScreen, 'a-planifier': ToPlanScreen },
   chauffeur: { accueil: ChauffeurHome },
   commercial: { accueil: CommercialHome },
