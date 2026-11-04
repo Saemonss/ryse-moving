@@ -17,6 +17,8 @@ import { TeamScreen } from '../views/gerant/TeamScreen'
 import { FleetScreen } from '../views/gerant/FleetScreen'
 import { ProfitScreen } from '../views/gerant/ProfitScreen'
 import { SettingsScreen } from '../views/gerant/SettingsScreen'
+import { DayReview } from '../views/gerant/DayReview'
+import { ClaimScreen } from '../views/gerant/ClaimScreen'
 import { PlanificateurPlanning } from '../views/planificateur/PlanningScreen'
 import { AbsencesScreen } from '../views/planificateur/AbsencesScreen'
 import { ToPlanScreen } from '../views/planificateur/ToPlanScreen'
@@ -45,6 +47,8 @@ const SCREENS: Record<ViewId, Record<string, Screen>> = {
     flotte: FleetScreen,
     rentabilite: ProfitScreen,
     parametres: SettingsScreen,
+    journee: DayReview,
+    litige: ClaimScreen,
   },
   planificateur: { planning: PlanificateurPlanning, absences: AbsencesScreen, 'a-planifier': ToPlanScreen },
   chauffeur: { accueil: ChauffeurApp },

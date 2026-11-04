@@ -79,13 +79,19 @@ export function syncOffice(data: DemoData, phoneDays: DriverDay[]): DemoData {
  */
 export function applyValidation(data: DemoData, day: DriverDay, at: string): DemoData {
   const hoursFix = day.corrections.filter((c) => c.field === 'hours').at(-1)
+  const expensesFix = day.corrections.filter((c) => c.field === 'expenses').at(-1)
+  const firstDone = day.missions.find((x) => x.step >= MISSION_DONE)?.moveId
   const moves = data.moves.map((m) => {
     const log = day.missions.find((x) => x.moveId === m.id && x.step >= MISSION_DONE)
     if (!log) return m
     const measured = (new Date(log.times.at(-1)!).getTime() - new Date(log.times[0]!).getTime()) / 3_600_000
     const share = day.missions.filter((x) => x.step >= MISSION_DONE).length || 1
     const hours = hoursFix ? hoursFix.to / share : measured >= 0.5 ? measured : m.plannedHours
-    const expenses = day.expenses.filter((e) => e.moveId === m.id).reduce((s, e) => s + e.cents, 0)
+    const expenses = expensesFix
+      ? m.id === firstDone
+        ? Math.round(expensesFix.to * 100)
+        : 0
+      : day.expenses.filter((e) => e.moveId === m.id || (!e.moveId && m.id === firstDone)).reduce((s, e) => s + e.cents, 0)
     const extraCosts = [...(m.extraCosts ?? []).filter((c) => c.kind !== 'expenses'), ...(expenses ? [{ kind: 'expenses' as const, cents: expenses }] : [])]
     return { ...m, actualHours: Math.max(0.5, Math.round(hours * 2) / 2), extraCosts }
   })

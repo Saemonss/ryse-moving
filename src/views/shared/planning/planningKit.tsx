@@ -31,6 +31,8 @@ export function MoveBlock({ move, data, conflict, compact = false, draggable = f
   const { t, lang } = useI18n()
   const c = TYPE_COLORS[move.type]
   const client = customerOf(data, move)?.name ?? ''
+  // Étape en cours envoyée par le téléphone du chauffeur (avancement en direct)
+  const liveStep = data.days.flatMap((d) => d.missions).find((m) => m.moveId === move.id)?.step ?? 0
   const label = `${move.startTime} · ${client} · ${t(`moveType.${move.type}`)}${conflict ? ` · ${t('planning.conflict')}` : ''}`
   return (
     <button
@@ -53,7 +55,8 @@ export function MoveBlock({ move, data, conflict, compact = false, draggable = f
       <span className="flex items-center gap-1.5">
         <span className="size-2 shrink-0 rounded-full" style={{ background: c.dot }} aria-hidden="true" />
         <span className="tabular font-semibold">{move.startTime}</span>
-        {conflict && <TriangleAlert size={13} className="ml-auto shrink-0 text-danger" aria-hidden="true" />}
+        {liveStep > 0 && liveStep < 7 && <span className="tabular ml-auto rounded bg-warning-soft px-1 text-[11px] font-semibold text-warning">{liveStep + 1}/7</span>}
+        {conflict && <TriangleAlert size={13} className={`${liveStep > 0 && liveStep < 7 ? '' : 'ml-auto'} shrink-0 text-danger`} aria-hidden="true" />}
       </span>
       <span className="mt-0.5 block truncate font-medium">{client}</span>
       {!compact && (

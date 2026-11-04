@@ -45,6 +45,8 @@ export const VIEWS: ViewDef[] = [
       { id: 'flotte', icon: Truck, label: 'menu.flotte', menu: true, ready: true },
       { id: 'rentabilite', icon: ChartColumn, label: 'menu.rentabilite', menu: true, ready: true },
       { id: 'parametres', icon: Settings2, label: 'menu.parametres', menu: true, ready: true },
+      { id: 'journee', icon: ClipboardList, label: 'review.blockTitle', menu: false, ready: true },
+      { id: 'litige', icon: FileText, label: 'menu.dossier', menu: false, ready: true },
     ],
   },
   {

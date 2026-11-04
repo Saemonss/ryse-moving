@@ -12,7 +12,8 @@ import { deriveAlerts } from '../../data/scenarios'
 import { moveMargin } from '../../data/margin'
 import { at } from '../../data/dates'
 import { STATUS_TONE, byId, cityName, customerOf, movesOn } from '../../data/selectors'
-import type { Alert, Move, MoveStatus } from '../../data/types'
+import type { Alert, DemoData, Move, MoveStatus } from '../../data/types'
+import { MISSION_DONE, MISSION_STEPS } from '../../data/field'
 import { Card } from '../../ui/Card'
 import { StatusBadge } from '../../ui/StatusBadge'
 import { ActionAlert } from '../../ui/ActionAlert'
@@ -25,9 +26,14 @@ import { isScreenReady } from '../../app/views'
 import { alertContent } from './alertContent'
 import { AlertDialog } from './AlertDialog'
 
-/** Avancement d'un déménagement du jour, estimé à partir de l'heure de départ et de la durée prévue. */
-function progressOf(move: Move, now: Date): { pct: number; step: 'waiting' | 'late' | 'road' | 'loading' | 'delivery' | 'finishing' | 'done' } {
+/**
+ * Avancement d'un déménagement du jour : d'abord l'étape réelle envoyée par le téléphone du chauffeur ;
+ * sinon une estimation à partir de l'heure de départ et de la durée prévue.
+ */
+function progressOf(move: Move, now: Date, data: DemoData): { pct: number; step: 'waiting' | 'late' | 'road' | 'loading' | 'delivery' | 'finishing' | 'done'; live?: number } {
   if (['termine', 'facture', 'paye'].includes(move.status)) return { pct: 100, step: 'done' }
+  const log = data.days.flatMap((d) => d.missions).find((m) => m.moveId === move.id)
+  if (log && log.step > 0) return { pct: Math.round((log.step / MISSION_DONE) * 100), step: 'road', live: log.step }
   if (move.status !== 'enCours' || !move.startedAt) {
     return { pct: 0, step: now > at(move.date, move.startTime) ? 'late' : 'waiting' }
   }
@@ -92,7 +98,8 @@ export function GerantHome() {
           ) : (
             <ul className="divide-y divide-line/70">
               {todayMoves.map((m) => {
-                const p = progressOf(m, now)
+                const p = progressOf(m, now, data)
+                const progressLabel = p.live !== undefined ? t('live.step', { n: Math.min(p.live + 1, MISSION_DONE), label: t(`terrain.mission.steps.${MISSION_STEPS[Math.min(p.live, MISSION_DONE - 1)]!}`) }) : t(`gerant.progress.${p.step}`, { time: m.startTime })
                 return (
                   <li key={m.id} className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3.5">
                     <span className="tabular font-semibold">{m.startTime}</span>
@@ -121,7 +128,7 @@ export function GerantHome() {
                         aria-valuenow={p.pct}
                         aria-valuemin={0}
                         aria-valuemax={100}
-                        aria-label={t(`gerant.progress.${p.step}`, { time: m.startTime })}
+                        aria-label={progressLabel}
                       >
                         <div
                           className={`h-full rounded-full transition-[width] duration-500 ease-out ${p.step === 'done' ? 'bg-success' : 'bg-accent'}`}
@@ -129,7 +136,7 @@ export function GerantHome() {
                         />
                       </div>
                       <span className={`whitespace-nowrap text-[13px] font-medium ${p.step === 'late' ? 'text-warning' : 'text-muted'}`}>
-                        {t(`gerant.progress.${p.step}`, { time: m.startTime })}
+                        {progressLabel}
                       </span>
                       <StatusBadge tone={STATUS_TONE[m.status]}>{t(`status.${m.status}`)}</StatusBadge>
                     </div>
@@ -189,6 +196,8 @@ export function GerantHome() {
           </ul>
         </Card>
 
+        <ReviewBlock />
+
         <Card title={t('gerant.todoTitle')}>
           <ul className="space-y-2.5">
             {todos.map(({ icon: Icon, label, status }) => (
@@ -205,5 +214,36 @@ export function GerantHome() {
 
       <AlertDialog alert={openAlert} onClose={() => setOpenAlert(null)} />
     </>
+  )
+}
+
+/** Journées envoyées par les chauffeurs, en attente de contrôle. */
+function ReviewBlock() {
+  const { t, lang } = useI18n()
+  const data = useDemo((s) => s.data)
+  const sent = data.days.filter((d) => d.status === 'sent')
+  return (
+    <Card title={t('review.blockTitle')} aside={sent.length > 0 && <StatusBadge tone="warning">{sent.length}</StatusBadge>}>
+      {sent.length === 0 ? (
+        <p className="py-2 text-[15px] text-muted">{t('review.none')}</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {sent.map((d) => {
+            const s = byId(data.staff, d.staffId)
+            const damage = d.missions.some((m) => m.damage)
+            return (
+              <li key={d.id} className="flex items-center gap-3 text-[15px]">
+                <Avatar name={s ? `${s.firstName} ${s.lastName}` : ''} size={28} />
+                <span className="flex-1">{t('review.line', { name: s ? `${s.firstName} ${s.lastName}` : '', date: fmtDate(d.date, lang, 'dayMonth') })}</span>
+                {damage && <StatusBadge tone="warning">{t('review.damage')}</StatusBadge>}
+                <ScreenLink view="gerant" screen="journee" param={d.id} arrow className="text-sm">
+                  {t('review.open')}
+                </ScreenLink>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </Card>
   )
 }

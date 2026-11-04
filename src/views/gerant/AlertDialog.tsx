@@ -13,6 +13,7 @@ import { Button } from '../../ui/Button'
 import { TextArea } from '../../ui/Field'
 import { toast } from '../../ui/Toast'
 import { ConflictDetail } from '../shared/ConflictDetail'
+import { go } from '../../app/router'
 import { PhotoView } from '../../ui/Photo'
 
 export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: () => void }) {
@@ -44,6 +45,10 @@ export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: 
                 const ok = resolveAlert(shown)
                 onClose()
                 toast(ok ? done : t('conflicts.stale'), ok ? 'success' : 'info')
+                if (ok && shown.kind === 'damage') {
+                  const claim = useDemo.getState().data.claims.find((c) => c.moveId === shown.moveId)
+                  if (claim) go('gerant', 'litige', claim.id)
+                }
               }}
             >
               {apply}

@@ -16,6 +16,7 @@ import { StatusBadge } from '../../ui/StatusBadge'
 import { Avatar } from '../../ui/Avatar'
 import { go, hrefOf } from '../../app/router'
 import { Timeline } from './Timeline'
+import { FieldCard } from './FieldCard'
 
 export function MoveFile({ param }: { param?: string }) {
   const { t, lang } = useI18n()
@@ -87,6 +88,8 @@ export function MoveFile({ param }: { param?: string }) {
       <Card title={t('file.timeline')} className="mb-6">
         <Timeline move={move} />
       </Card>
+
+      <FieldCard moveId={move.id} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={t('file.client')}>

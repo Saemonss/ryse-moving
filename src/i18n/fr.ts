@@ -607,7 +607,7 @@ export const fr = {
   },
   claims: {
     title: 'Dossier litige {id}',
-    move: 'Déménagement',
+    move: 'Déménagement :',
     reportedBy: 'Signalé par {name}, le {date}',
     description: 'Description',
     descriptionText: '{item} : {type}, gravité {severity}.',

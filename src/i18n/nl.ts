@@ -612,7 +612,7 @@ export const nl: Dictionary = {
   },
   claims: {
     title: 'Geschildossier {id}',
-    move: 'Verhuizing',
+    move: 'Verhuizing:',
     reportedBy: 'Gemeld door {name}, op {date}',
     description: 'Beschrijving',
     descriptionText: '{item}: {type}, ernst {severity}.',
