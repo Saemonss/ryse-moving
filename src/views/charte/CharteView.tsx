@@ -9,7 +9,8 @@ import { fmtMoney } from '../../i18n/format'
 import { Logo } from '../../ui/Logo'
 import { Button } from '../../ui/Button'
 import { Card } from '../../ui/Card'
-import { StatusBadge, type Tone } from '../../ui/StatusBadge'
+import { StatusBadge } from '../../ui/StatusBadge'
+import { STATUS_TONE } from '../../data/selectors'
 import { ActionAlert } from '../../ui/ActionAlert'
 import { SimpleTable } from '../../ui/SimpleTable'
 import { Field } from '../../ui/Field'
@@ -20,7 +21,6 @@ import { toast } from '../../ui/Toast'
 import { Avatar } from '../../ui/Avatar'
 
 const SWATCHES = ['--ink', '--accent', '--accent-soft', '--accent-pale', '--surface', '--surface-2', '--line', '--muted', '--success', '--warning', '--danger', '--info']
-const TONES: Tone[] = ['success', 'warning', 'danger', 'info', 'accent', 'neutral']
 const SAMPLE_NAMES = ['Nathalie Verhaegen', 'Karim Benali', 'Julie Desmet', 'Thomas Lemaire', 'Marc Janssens', 'Claire Vandamme']
 
 type TabId = 'a' | 'b' | 'c'
@@ -33,7 +33,7 @@ export function CharteView() {
   const ai = useFakeAi(t('charte.aiResult'), 1400)
 
   const STATUSES = ['paye', 'enCours', 'facture', 'planifie', 'devisEnvoye', 'demande'] as const
-  const rows = SAMPLE_NAMES.map((name, i) => ({ name, amount: 98000 + i * 41250, tone: TONES[i % TONES.length] ?? 'neutral', status: STATUSES[i % STATUSES.length] ?? 'demande' }))
+  const rows = SAMPLE_NAMES.map((name, i) => ({ name, amount: 98000 + i * 41250, status: STATUSES[i % STATUSES.length] ?? 'demande' }))
   const filtered = rows.filter((r) => r.name.toLowerCase().includes(query.trim().toLowerCase()))
   const tabs = [
     { id: 'a' as const, label: t('charte.tabA') },
@@ -77,8 +77,8 @@ export function CharteView() {
       <div className="grid gap-8 md:grid-cols-2">
         <Card title={t('charte.badges')}>
           <div className="flex flex-wrap gap-2">
-            {(['demande', 'devisEnvoye', 'planifie', 'enCours', 'termine', 'paye'] as const).map((s, i) => (
-              <StatusBadge key={s} tone={(['neutral', 'accent', 'info', 'warning', 'success', 'success'] as Tone[])[i] ?? 'neutral'}>
+            {(['demande', 'devisEnvoye', 'planifie', 'enCours', 'termine', 'paye'] as const).map((s) => (
+              <StatusBadge key={s} tone={STATUS_TONE[s]}>
                 {t(`status.${s}`)}
               </StatusBadge>
             ))}
@@ -119,7 +119,7 @@ export function CharteView() {
           empty={t('charte.fieldHint', { n: 0 })}
           columns={[
             { key: 'n', label: t('commercial.colClient'), render: (r) => <span className="flex items-center gap-2.5"><Avatar name={r.name} size={28} />{r.name}</span> },
-            { key: 's', label: t('commercial.colStatus'), render: (r) => <StatusBadge tone={r.tone}>{t(`status.${r.status}`)}</StatusBadge> },
+            { key: 's', label: t('commercial.colStatus'), render: (r) => <StatusBadge tone={STATUS_TONE[r.status]}>{t(`status.${r.status}`)}</StatusBadge> },
             { key: 'a', label: t('commercial.colAmount'), render: (r) => fmtMoney(r.amount, lang), className: 'text-right' },
           ]}
         />
