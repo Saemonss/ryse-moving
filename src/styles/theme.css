@@ -1,0 +1,140 @@
+/*
+ * Charte RySe Moving : couleurs, police, réglages de base.
+ * Les couleurs de marque viennent de CLAUDE.md. Les couleurs d'état ont un seul sens chacune :
+ *   success = c'est fait / payé · warning = à surveiller · danger = à régler maintenant · info = pour information.
+ */
+@import '@fontsource-variable/inter-tight';
+@import 'tailwindcss';
+
+:root {
+  --background: #ffffff;
+  --foreground: #0b1026;
+  --ink: #0b1026;
+  --ink-2: #161b38;
+  --ink-line: #262c4f;
+  --muted: #5d6286; /* assombri par rapport à #6b7090 pour garantir le contraste AA sur --surface */
+  --subtle: #9aa0bf;
+  --line: #e4e5ee;
+  --surface: #f4f3fb;
+  --surface-2: #e9e6fa;
+  --accent: #5b3bea;
+  --accent-from: #6a4dff;
+  --accent-to: #4427d7;
+  --accent-soft: #9c85ff;
+  --accent-pale: #d3ccf7;
+  --accent-on-dark: #a07cff;
+
+  --success: #13704a;
+  --success-soft: #e3f4ec;
+  --warning: #8f5200;
+  --warning-soft: #fdf0dc;
+  --danger: #b4232c;
+  --danger-soft: #fce8e9;
+  --info: #1d5fb5;
+  --info-soft: #e5eefa;
+
+  --shadow-sm: 0 1px 2px rgb(11 16 38 / 0.06), 0 1px 1px rgb(11 16 38 / 0.04);
+  --shadow-md: 0 6px 16px -4px rgb(11 16 38 / 0.12), 0 2px 4px rgb(11 16 38 / 0.06);
+  --shadow-lg: 0 24px 48px -12px rgb(11 16 38 / 0.28), 0 8px 16px -8px rgb(11 16 38 / 0.12);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@theme inline {
+  --font-sans: 'Inter Tight Variable', ui-sans-serif, system-ui, sans-serif;
+  --color-bg: var(--background);
+  --color-fg: var(--foreground);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-line: var(--ink-line);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-pale: var(--accent-pale);
+  --color-accent-on-dark: var(--accent-on-dark);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --shadow-card: var(--shadow-sm);
+  --shadow-pop: var(--shadow-md);
+  --shadow-float: var(--shadow-lg);
+  --ease-out: var(--ease-out);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--foreground);
+    background: var(--surface);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: var(--accent-pale);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--subtle) transparent;
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes rm-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes rm-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes rm-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rm-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
