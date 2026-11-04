@@ -9,7 +9,7 @@ test('Données sauvegardées un autre jour → données de départ du jour', asy
     localStorage.setItem('ryse-moving-demo', JSON.stringify({ state: { seedDay: '2000-01-01', data: { moves: [] } }, version: 1 })),
   )
   await page.reload()
-  await expect(page.locator('main tbody tr')).toHaveCount(3)
+  await expect(page.locator('main [role="progressbar"]')).toHaveCount(3)
 })
 
 test('Sauvegarde illisible → la démo démarre quand même', async ({ page }) => {

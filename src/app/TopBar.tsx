@@ -7,10 +7,12 @@ import { FlaskConical, RotateCcw, Settings } from 'lucide-react'
 import { useI18n, type Lang } from '../i18n'
 import { Logo } from '../ui/Logo'
 import { go, type Route } from './router'
+
+type ActiveView = Route['view']
 import { VIEWS } from './views'
 import { useShell } from './shellState'
 
-export function TopBar({ route, showLogo }: { route: Route; showLogo: boolean }) {
+export function TopBar({ route, showLogo }: { route: ActiveView; showLogo: boolean }) {
   const { t } = useI18n()
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-line bg-white/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 lg:px-6">
@@ -28,7 +30,7 @@ export function TopBar({ route, showLogo }: { route: Route; showLogo: boolean })
   )
 }
 
-function ViewSwitcher({ route }: { route: Route }) {
+function ViewSwitcher({ route }: { route: ActiveView }) {
   const { t } = useI18n()
   return (
     <div className="flex items-center gap-0.5 rounded-xl bg-surface p-1">

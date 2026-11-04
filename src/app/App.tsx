@@ -15,7 +15,7 @@ import { ChauffeurHome } from '../views/chauffeur/ChauffeurHome'
 import { CommercialHome } from '../views/commercial/CommercialHome'
 import { ClientHome } from '../views/client/ClientHome'
 import { ComptabiliteHome } from '../views/comptabilite/ComptabiliteHome'
-import { normalizeHash, useRoute } from './router'
+import { normalizeHash, useRoute, type Route } from './router'
 import { TopBar } from './TopBar'
 import { Sidebar } from './Sidebar'
 import { PhoneFrame } from './PhoneFrame'
@@ -23,13 +23,16 @@ import { useShell, useViewUser } from './shellState'
 import { useShortcuts } from './useShortcuts'
 import { viewDef, type ViewId } from './views'
 
-const SCREENS: Record<ViewId, () => React.JSX.Element> = {
-  gerant: GerantHome,
-  planificateur: PlanificateurHome,
-  chauffeur: ChauffeurHome,
-  commercial: CommercialHome,
-  client: ClientHome,
-  comptabilite: ComptabiliteHome,
+type Screen = (props: { param?: string }) => React.JSX.Element
+
+/** Composant de chaque écran : SCREENS[vue][ecran]. Les écrans pas encore prêts n'y figurent pas. */
+const SCREENS: Record<ViewId, Record<string, Screen>> = {
+  gerant: { accueil: GerantHome },
+  planificateur: { accueil: PlanificateurHome },
+  chauffeur: { accueil: ChauffeurHome },
+  commercial: { accueil: CommercialHome },
+  client: { accueil: ClientHome },
+  comptabilite: { accueil: ComptabiliteHome },
 }
 
 export function App() {
@@ -52,15 +55,15 @@ export function App() {
 
   return (
     <>
-      {route === 'charte' ? (
+      {route.view === 'charte' ? (
         <div className="min-h-dvh">
-          <TopBar route={route} showLogo />
+          <TopBar route={route.view} showLogo />
           <main id="main">
             <CharteView />
           </main>
         </div>
       ) : (
-        <ViewLayout view={route} />
+        <ViewLayout route={route as Route & { view: ViewId }} />
       )}
       <ResetDialog />
       <Toaster />
@@ -68,10 +71,11 @@ export function App() {
   )
 }
 
-function ViewLayout({ view }: { view: ViewId }) {
+function ViewLayout({ route }: { route: Route & { view: ViewId } }) {
   const { t } = useI18n()
+  const { view, screen, param } = route
   const user = useViewUser(view)
-  const Screen = SCREENS[view]
+  const Screen = SCREENS[view][screen] ?? SCREENS[view].accueil!
   const phone = viewDef(view).layout === 'phone'
 
   if (phone)
@@ -84,7 +88,7 @@ function ViewLayout({ view }: { view: ViewId }) {
             hint={t('shell.phoneHint')}
             user={user}
           >
-            <Screen />
+            <Screen param={param} />
           </PhoneFrame>
         </main>
       </div>
@@ -92,11 +96,11 @@ function ViewLayout({ view }: { view: ViewId }) {
 
   return (
     <div className="flex min-h-dvh">
-      <Sidebar view={view} />
+      <Sidebar view={view} screen={screen} />
       <div className="min-w-0 flex-1">
         <TopBar route={view} showLogo={false} />
-        <main id="main" key={view} className="mx-auto max-w-[1240px] px-6 pb-20 pt-8 lg:px-10">
-          <Screen />
+        <main id="main" key={`${view}/${screen}/${param ?? ''}`} className="mx-auto max-w-[1240px] px-6 pb-20 pt-8 lg:px-10">
+          <Screen param={param} />
         </main>
       </div>
     </div>

@@ -1,24 +1,40 @@
 /*
- * Accueil du gérant : l'essentiel en un coup d'œil (divulgation progressive).
- * 1. Les déménagements du jour  2. Les alertes, chacune avec son action  3. Le chiffre d'affaires du mois  4. À faire
+ * Accueil du gérant : l'essentiel en un coup d'œil (divulgation progressive), chaque bloc mène à son écran.
+ * 1. Les déménagements du jour et leur avancement  2. Les alertes, chacune avec son action
+ * 3. Le chiffre d'affaires et la marge du mois  4. Les actions à faire
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CalendarCheck, ClipboardList, FileSignature, Inbox, Receipt } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { fmtDate, fmtMoney } from '../../i18n/format'
 import { useDemo } from '../../store/demoStore'
 import { deriveAlerts } from '../../data/scenarios'
+import { moveMargin } from '../../data/margin'
+import { at } from '../../data/dates'
 import { STATUS_TONE, byId, cityName, customerOf, movesOn } from '../../data/selectors'
-import type { Alert, Move } from '../../data/types'
+import type { Alert, Move, MoveStatus } from '../../data/types'
 import { Card } from '../../ui/Card'
-import { SimpleTable } from '../../ui/SimpleTable'
 import { StatusBadge } from '../../ui/StatusBadge'
 import { ActionAlert } from '../../ui/ActionAlert'
 import { Avatar } from '../../ui/Avatar'
 import { PageHeader } from '../shared/Page'
+import { ScreenLink } from '../shared/ScreenLink'
 import { useViewUser } from '../../app/shellState'
+import { go } from '../../app/router'
+import { isScreenReady } from '../../app/views'
 import { alertContent } from './alertContent'
 import { AlertDialog } from './AlertDialog'
+
+/** Avancement d'un déménagement du jour, estimé à partir de l'heure de départ et de la durée prévue. */
+function progressOf(move: Move, now: Date): { pct: number; step: 'waiting' | 'late' | 'road' | 'loading' | 'delivery' | 'finishing' | 'done' } {
+  if (['termine', 'facture', 'paye'].includes(move.status)) return { pct: 100, step: 'done' }
+  if (move.status !== 'enCours' || !move.startedAt) {
+    return { pct: 0, step: now > at(move.date, move.startTime) ? 'late' : 'waiting' }
+  }
+  const elapsed = (now.getTime() - new Date(move.startedAt).getTime()) / 60_000
+  const pct = Math.max(3, Math.min(97, Math.round((elapsed / (move.plannedHours * 60)) * 100)))
+  return { pct, step: pct < 15 ? 'road' : pct < 55 ? 'loading' : pct < 90 ? 'delivery' : 'finishing' }
+}
 
 export function GerantHome() {
   const { t, lang } = useI18n()
@@ -26,24 +42,36 @@ export function GerantHome() {
   const today = useDemo((s) => s.seedDay)
   const user = useViewUser('gerant')
   const [openAlert, setOpenAlert] = useState<Alert | null>(null)
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 60_000)
+    return () => window.clearInterval(id)
+  }, [])
 
-  // L'alerte « marge faible » apparaîtra avec l'écran Rentabilité (lot 6).
-  const alerts = useMemo(() => deriveAlerts(data, today).filter((a) => a.kind !== 'lowMargin'), [data, today])
+  const alerts = useMemo(
+    () => deriveAlerts(data, today).filter((a) => a.kind !== 'lowMargin' || isScreenReady('gerant', 'rentabilite')),
+    [data, today],
+  )
   const todayMoves = movesOn(data, today)
 
+  // Chiffre d'affaires et marge du mois = réalisé (terminé, facturé, payé) + planifié (planifié, en cours)
   const month = today.slice(0, 7)
-  // Chiffre d'affaires du mois = réalisé (terminé, facturé, payé) + planifié (planifié, en cours)
   const ofMonth = data.moves.filter((m) => m.date.startsWith(month) && ['planifie', 'enCours', 'termine', 'facture', 'paye'].includes(m.status))
   const revenue = ofMonth.reduce((sum, m) => sum + m.priceCents, 0)
   const realised = ofMonth.filter((m) => ['termine', 'facture', 'paye'].includes(m.status)).reduce((sum, m) => sum + m.priceCents, 0)
-  const count = (s: Move['status']) => data.moves.filter((m) => m.status === s).length
+  const margin = ofMonth.reduce((sum, m) => sum + moveMargin(m, data).cents, 0)
+  const marginRate = revenue ? margin / revenue : 0
+  const lowMarginRate = marginRate * 100 < data.settings.marginThresholdPct
+  const count = (s: MoveStatus) => data.moves.filter((m) => m.status === s).length
 
-  const todos = [
-    { icon: Inbox, label: t('gerant.todoRequests', { n: count('demande') }) },
-    { icon: ClipboardList, label: t('gerant.todoVisits', { n: count('visite') }) },
-    { icon: FileSignature, label: t('gerant.todoToPlan', { n: count('devisSigne') }) },
-    { icon: Receipt, label: t('gerant.todoToInvoice', { n: count('termine') }) },
+  const todos: { icon: typeof Inbox; label: string; status: MoveStatus }[] = [
+    { icon: Inbox, label: t('gerant.todoRequests', { n: count('demande') }), status: 'demande' },
+    { icon: ClipboardList, label: t('gerant.todoVisits', { n: count('visite') }), status: 'visite' },
+    { icon: FileSignature, label: t('gerant.todoToPlan', { n: count('devisSigne') }), status: 'devisSigne' },
+    { icon: Receipt, label: t('gerant.todoToInvoice', { n: count('termine') }), status: 'termine' },
   ]
+
+  const onAlert = (a: Alert) => (a.kind === 'lowMargin' ? go('gerant', 'rentabilite') : setOpenAlert(a))
 
   return (
     <>
@@ -52,49 +80,64 @@ export function GerantHome() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <Card
           title={t('gerant.todayTitle')}
-          aside={<span className="tabular text-sm text-muted">{todayMoves.length}</span>}
+          aside={
+            <ScreenLink view="gerant" screen="planning" arrow className="text-sm">
+              {t('gerant.seePlanning')}
+            </ScreenLink>
+          }
           padded={false}
         >
-          <SimpleTable
-            rows={todayMoves}
-            rowKey={(m) => m.id}
-            empty={t('gerant.noMovesToday')}
-            columns={[
-              { key: 'time', label: t('gerant.colTime'), render: (m) => <span className="font-semibold">{m.startTime}</span> },
-              {
-                key: 'client',
-                label: t('gerant.colClient'),
-                render: (m) => (
-                  <div>
-                    <p className="font-medium">{customerOf(data, m)?.name}</p>
-                    <p className="text-[13px] text-muted">
-                      <span className="text-ink/80">
-                        {cityName(m.from.cityId, lang)} → {m.to ? cityName(m.to.cityId, lang) : t(m.type === 'debarras' ? 'common.recycling' : 'common.storage')}
-                      </span>
-                      {' · '}
-                      {t(`moveType.${m.type}`)} · {t('common.volume', { n: m.volumeM3 })}
-                    </p>
-                  </div>
-                ),
-              },
-              {
-                key: 'team',
-                label: t('gerant.colTeam'),
-                render: (m) => (
-                  <div className="space-y-1">
+          {todayMoves.length === 0 ? (
+            <p className="px-5 py-8 text-center text-[15px] text-muted">{t('gerant.noMovesToday')}</p>
+          ) : (
+            <ul className="divide-y divide-line/70">
+              {todayMoves.map((m) => {
+                const p = progressOf(m, now)
+                return (
+                  <li key={m.id} className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3.5">
+                    <span className="tabular font-semibold">{m.startTime}</span>
+                    <div className="min-w-0">
+                      <ScreenLink view="gerant" screen="dossier" param={m.id} fallback className="font-medium text-ink">
+                        {customerOf(data, m)?.name}
+                      </ScreenLink>
+                      <p className="truncate text-[13px] text-muted">
+                        <span className="text-ink/80">
+                          {cityName(m.from.cityId, lang)} → {m.to ? cityName(m.to.cityId, lang) : t(m.type === 'debarras' ? 'common.recycling' : 'common.storage')}
+                        </span>
+                        {' · '}
+                        {t(`moveType.${m.type}`)} · {t('common.volume', { n: m.volumeM3 })} · {byId(data.vehicles, m.vehicleIds[0])?.plate}
+                      </p>
+                    </div>
                     <span className="flex -space-x-1.5">
                       {m.teamIds.map((id) => {
                         const s = byId(data.staff, id)
                         return s ? <Avatar key={id} name={`${s.firstName} ${s.lastName}`} size={26} className="ring-2 ring-white" /> : null
                       })}
                     </span>
-                    <p className="whitespace-nowrap text-[13px] text-muted">{byId(data.vehicles, m.vehicleIds[0])?.plate}</p>
-                  </div>
-                ),
-              },
-              { key: 'status', label: t('gerant.colStatus'), render: (m) => <StatusBadge tone={STATUS_TONE[m.status]}>{t(`status.${m.status}`)}</StatusBadge> },
-            ]}
-          />
+                    <div className="col-start-2 col-end-4 flex items-center gap-3">
+                      <div
+                        className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2"
+                        role="progressbar"
+                        aria-valuenow={p.pct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={t(`gerant.progress.${p.step}`, { time: m.startTime })}
+                      >
+                        <div
+                          className={`h-full rounded-full transition-[width] duration-500 ease-out ${p.step === 'done' ? 'bg-success' : 'bg-accent'}`}
+                          style={{ width: `${p.pct}%` }}
+                        />
+                      </div>
+                      <span className={`whitespace-nowrap text-[13px] font-medium ${p.step === 'late' ? 'text-warning' : 'text-muted'}`}>
+                        {t(`gerant.progress.${p.step}`, { time: m.startTime })}
+                      </span>
+                      <StatusBadge tone={STATUS_TONE[m.status]}>{t(`status.${m.status}`)}</StatusBadge>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </Card>
 
         <Card
@@ -110,14 +153,26 @@ export function GerantHome() {
             <div className="-my-1 divide-y divide-line">
               {alerts.map((a) => {
                 const c = alertContent(a, data, t, lang)
-                return <ActionAlert key={a.id} tone={a.tone} title={c.title} text={c.text} actionLabel={c.action} onAction={() => setOpenAlert(a)} />
+                return <ActionAlert key={a.id} tone={a.tone} title={c.title} text={c.text} actionLabel={c.action} onAction={() => onAlert(a)} />
               })}
             </div>
           )}
         </Card>
 
-        <Card title={t('gerant.revenueTitle')}>
-          <p className="tabular text-[34px] font-semibold leading-none tracking-[-0.03em] text-ink">{fmtMoney(revenue, lang, false)}</p>
+        <Card
+          title={t('gerant.revenueTitle')}
+          aside={
+            <ScreenLink view="gerant" screen="rentabilite" arrow className="text-sm">
+              {t('gerant.seeProfit')}
+            </ScreenLink>
+          }
+        >
+          <div className="flex flex-wrap items-end gap-x-8 gap-y-2">
+            <p className="tabular text-[34px] font-semibold leading-none tracking-[-0.03em] text-ink">{fmtMoney(revenue, lang, false)}</p>
+            <p className={`tabular pb-0.5 text-[15px] font-medium ${lowMarginRate ? 'text-danger' : 'text-success'}`}>
+              {t('gerant.marginOfMonth', { pct: Math.round(marginRate * 100), amount: fmtMoney(margin, lang, false) })}
+            </p>
+          </div>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
             <div className="h-full rounded-full bg-success" style={{ width: `${revenue ? (realised / revenue) * 100 : 0}%` }} />
           </div>
@@ -136,10 +191,12 @@ export function GerantHome() {
 
         <Card title={t('gerant.todoTitle')}>
           <ul className="space-y-2.5">
-            {todos.map(({ icon: Icon, label }) => (
-              <li key={label} className="flex items-center gap-3 text-[15px] text-ink">
+            {todos.map(({ icon: Icon, label, status }) => (
+              <li key={status} className="flex items-center gap-3 text-[15px] text-ink">
                 <Icon size={18} className="shrink-0 text-muted" aria-hidden="true" />
-                <span className="tabular">{label}</span>
+                <ScreenLink view="gerant" screen="demenagements" param={status} fallback className="tabular text-ink">
+                  {label}
+                </ScreenLink>
               </li>
             ))}
           </ul>
