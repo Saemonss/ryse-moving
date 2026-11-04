@@ -35,12 +35,15 @@ interface PhoneScreenProps {
 
 export function PhoneScreen({ now, title, progress, onBack, action, secondary, children, banner }: PhoneScreenProps) {
   const { t } = useI18n()
-  const lock = useRef(false)
+  // Anti double appui : le MÊME bouton appuyé deux fois en moins de 0,7 s n'agit qu'une fois
+  // (le bouton de l'écran suivant, lui, répond tout de suite).
+  const last = useRef<{ label: string; at: number } | null>(null)
   const run = () => {
-    if (!action || action.disabled || lock.current) return
-    lock.current = true
+    if (!action || action.disabled) return
+    const now = Date.now()
+    if (last.current && last.current.label === action.label && now - last.current.at < 700) return
+    last.current = { label: action.label, at: now }
     action.onClick()
-    window.setTimeout(() => (lock.current = false), 700)
   }
   return (
     <div className="flex min-h-full flex-col text-[17px] text-ink">

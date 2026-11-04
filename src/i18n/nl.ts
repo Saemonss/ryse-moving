@@ -433,9 +433,9 @@ export const nl: Dictionary = {
       open: 'Opdracht openen',
       resume: 'Opdracht verderzetten',
       done: 'Afgerond',
-      officeNote: 'Instructie van het kantoor',
+      officeNote: 'Instructie van het kantoor:',
       contact: 'Contactpersoon: {name}',
-      parking: 'Parkeren',
+      parking: 'Parkeren:',
     },
     route: {
       title: 'Route',
@@ -476,6 +476,8 @@ export const nl: Dictionary = {
       fragile: 'Breekbare voorwerpen (tik om te melden)',
       reserves: 'Opmerkingen van de klant',
       parcels: "Aantal collo's",
+      less: 'Eén collo minder',
+      more: 'Eén collo meer',
       special: 'Bijzondere voorwerpen geladen',
       reportDamage: 'Schade melden',
       damageDone: 'Schade gemeld: {item}',
@@ -551,6 +553,7 @@ export const nl: Dictionary = {
       sent: 'Dag verstuurd naar het kantoor.',
       ended: 'Dag afgesloten.',
       hoursValue: '{n} u',
+      minutesValue: '{n} min',
     },
     offline: {
       banner: 'Geen netwerk: alles blijft bewaard op de telefoon.',

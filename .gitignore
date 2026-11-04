@@ -6,3 +6,6 @@ playwright-report
 .playwright-mcp
 *.log
 docs/captures
+.walk.mjs
+.sheet.mjs
+.shot.mjs

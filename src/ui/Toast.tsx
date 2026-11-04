@@ -33,10 +33,18 @@ export function toast(message: string, tone: ToastItem['tone'] = 'success') {
   useToasts.getState().push(message, tone)
 }
 
-export function Toaster() {
-  const items = useToasts((s) => s.items)
+/**
+ * inPhone : affichage DANS le téléphone, juste au-dessus du gros bouton (un seul message à la fois),
+ * pour ne jamais masquer l'action principale du chauffeur.
+ */
+export function Toaster({ inPhone = false }: { inPhone?: boolean }) {
+  const all = useToasts((s) => s.items)
+  const items = inPhone ? all.slice(-1) : all
   return (
-    <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex flex-col items-center gap-2 px-4">
+    <div
+      aria-live="polite"
+      className={`pointer-events-none z-50 flex flex-col items-center gap-2 px-4 ${inPhone ? 'absolute inset-x-0 bottom-[104px]' : 'fixed inset-x-0 bottom-6'}`}
+    >
       {items.map((item) => {
         const Icon = item.tone === 'success' ? CircleCheck : Info
         return (

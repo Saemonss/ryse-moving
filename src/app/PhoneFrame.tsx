@@ -7,6 +7,7 @@ import { BatteryFull, SignalHigh, Wifi } from 'lucide-react'
 import { useI18n } from '../i18n'
 import { fmtTime } from '../i18n/format'
 import { Avatar } from '../ui/Avatar'
+import { Toaster } from '../ui/Toast'
 
 interface PhoneFrameProps {
   caption: string
@@ -53,6 +54,7 @@ export function PhoneFrame({ caption, hint, user, children }: PhoneFrameProps) {
             </span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:none]">{children}</div>
+          <Toaster inPhone />
           <div aria-hidden="true" className="flex h-7 shrink-0 items-center justify-center">
             <span className="h-[5px] w-32 rounded-full bg-ink/80" />
           </div>

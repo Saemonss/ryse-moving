@@ -20,7 +20,7 @@ import { SettingsScreen } from '../views/gerant/SettingsScreen'
 import { PlanificateurPlanning } from '../views/planificateur/PlanningScreen'
 import { AbsencesScreen } from '../views/planificateur/AbsencesScreen'
 import { ToPlanScreen } from '../views/planificateur/ToPlanScreen'
-import { ChauffeurHome } from '../views/chauffeur/ChauffeurHome'
+import { ChauffeurApp } from '../views/chauffeur/ChauffeurApp'
 import { CommercialHome } from '../views/commercial/CommercialHome'
 import { ClientHome } from '../views/client/ClientHome'
 import { ComptabiliteHome } from '../views/comptabilite/ComptabiliteHome'
@@ -47,7 +47,7 @@ const SCREENS: Record<ViewId, Record<string, Screen>> = {
     parametres: SettingsScreen,
   },
   planificateur: { planning: PlanificateurPlanning, absences: AbsencesScreen, 'a-planifier': ToPlanScreen },
-  chauffeur: { accueil: ChauffeurHome },
+  chauffeur: { accueil: ChauffeurApp },
   commercial: { accueil: CommercialHome },
   client: { accueil: ClientHome },
   comptabilite: { accueil: ComptabiliteHome },
@@ -84,7 +84,7 @@ export function App() {
         <ViewLayout route={route as Route & { view: ViewId }} />
       )}
       <ResetDialog />
-      <Toaster />
+      {!(route.view !== 'charte' && viewDef(route.view).layout === 'phone') && <Toaster />}
     </>
   )
 }

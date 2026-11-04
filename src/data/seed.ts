@@ -332,11 +332,11 @@ function seedDays(moves: Move[], customers: Customer[]): DriverDay[] {
     days.push({
       id: dayId('s-youssef', d), staffId: 's-youssef', date: d, status: 'sent', startedAt: t(d, '07:12'), startPlace: 'nivelles',
       vehicleId: sent.vehicleIds[0] ?? 'v-3',
-      check: { km: 61240, odometerPhoto: 'demo:compteur', fuel: 'troisQuarts', ok: true },
+      check: { km: 48210, odometerPhoto: 'demo:compteur', fuel: 'troisQuarts', ok: true },
       pauses: [{ start: t(d, '10:15'), end: t(d, '10:35') }],
       expenses: [{ id: 'exp-1', kind: 'parking', cents: 1250, photo: 'demo:ticket', at: t(d, '08:05'), moveId: sent.id }],
       corrections: [],
-      endedAt: t(d, '12:40'), endKm: 61306, endPlace: 'nivelles', sentAt: t(d, '12:44'),
+      endedAt: t(d, '12:40'), endKm: 48276, endPlace: 'nivelles', sentAt: t(d, '12:44'),
       missions: [{
         moveId: sent.id, step: 7,
         times: ['07:30', '08:02', '08:31', '09:40', '10:55', '11:20', '11:58'].map((h) => t(d, h)),

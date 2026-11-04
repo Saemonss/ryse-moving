@@ -428,9 +428,9 @@ export const fr = {
       open: 'Ouvrir la mission',
       resume: 'Continuer la mission',
       done: 'Terminée',
-      officeNote: 'Consigne du bureau',
+      officeNote: 'Consigne du bureau :',
       contact: 'Contact : {name}',
-      parking: 'Stationnement',
+      parking: 'Stationnement :',
     },
     route: {
       title: 'Itinéraire',
@@ -471,6 +471,8 @@ export const fr = {
       fragile: 'Objets fragiles (touchez pour signaler)',
       reserves: 'Remarques du client',
       parcels: 'Nombre de colis',
+      less: 'Un colis de moins',
+      more: 'Un colis de plus',
       special: 'Objets particuliers chargés',
       reportDamage: 'Signaler un dégât',
       damageDone: 'Dégât signalé : {item}',
@@ -546,6 +548,7 @@ export const fr = {
       sent: 'Journée envoyée au bureau.',
       ended: 'Journée terminée.',
       hoursValue: '{n} h',
+      minutesValue: '{n} min',
     },
     offline: {
       banner: 'Pas de réseau : tout est gardé sur le téléphone.',
