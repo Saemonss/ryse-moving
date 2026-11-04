@@ -81,7 +81,7 @@ export function FleetScreen() {
               ),
             },
             { key: 'c', label: t('fleet.colCapacity'), render: (v) => (v.volumeM3 ? t('common.volume', { n: v.volumeM3 }) : <span className="text-subtle">–</span>) },
-            { key: 'a', label: t('team.colAgency'), render: (v) => <span className="whitespace-nowrap">{t(`team.agency.${v.agencyId === 'a-lille' ? 'lille' : 'nivelles'}`)}</span> },
+            { key: 'a', label: t('team.colAgency'), className: 'hidden min-[1400px]:table-cell', render: (v) => <span className="whitespace-nowrap">{t(`team.agency.${v.agencyId === 'a-lille' ? 'lille' : 'nivelles'}`)}</span> },
             {
               key: 't',
               label: t('team.colToday'),

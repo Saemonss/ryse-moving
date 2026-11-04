@@ -132,11 +132,13 @@ export function MovesList({ param }: { param?: string }) {
                   <p className="font-medium">{customerOf(data, m)?.name}</p>
                   <p className="text-[13px] text-muted">
                     {cityName(m.from.cityId, lang)} → {m.to ? cityName(m.to.cityId, lang) : t(m.type === 'debarras' ? 'common.recycling' : 'common.storage')}
+                    <span className="min-[1400px]:hidden"> · {t(`moveType.${m.type}`)}</span>
                   </p>
                 </div>
               ),
             },
-            { key: 'type', label: t('moves.colType'), render: (m) => <span className="whitespace-nowrap">{t(`moveType.${m.type}`)}</span> },
+            // Type : colonne masquée sur les écrans étroits (il reste lisible sous le nom du client)
+            { key: 'type', label: t('moves.colType'), className: 'hidden min-[1400px]:table-cell', render: (m) => <span className="whitespace-nowrap">{t(`moveType.${m.type}`)}</span> },
             { key: 'date', label: t('moves.colDate'), render: (m) => <span className="whitespace-nowrap">{fmtDate(m.date, lang, 'medium')}</span> },
             { key: 'status', label: t('moves.colStatus'), render: (m) => <StatusBadge tone={STATUS_TONE[m.status]}>{t(`status.${m.status}`)}</StatusBadge> },
             { key: 'amount', label: t('moves.colAmount'), className: 'text-right', render: (m) => <span className="whitespace-nowrap">{fmtMoney(m.priceCents, lang, false)}</span> },

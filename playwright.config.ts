@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: './tests',
   fullyParallel: true,
-  workers: 4,
+  workers: 3,
   timeout: 240_000,
   reporter: [['./tests/reporter.ts']],
   use: {

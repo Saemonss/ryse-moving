@@ -9,7 +9,7 @@ import { useI18n } from '../../i18n'
 import { fmtMoney } from '../../i18n/format'
 import { useDemo, SETTINGS_BOUNDS } from '../../store/demoStore'
 import { DEFAULT_SETTINGS } from '../../data/seed'
-import { CONSUMPTION_L100, moveMargin } from '../../data/margin'
+import { CONSUMPTION_L100, isLowMargin, moveMargin } from '../../data/margin'
 import type { Settings, VehicleKind } from '../../data/types'
 import { Card } from '../../ui/Card'
 import { Button } from '../../ui/Button'
@@ -28,6 +28,7 @@ export function SettingsScreen() {
   const month = data.moves.filter((m) => m.date.startsWith(today.slice(0, 7)) && ['planifie', 'enCours', 'termine', 'facture', 'paye'].includes(m.status))
   const rev = month.reduce((a, m) => a + m.priceCents, 0)
   const mar = month.reduce((a, m) => a + moveMargin(m, data).cents, 0)
+  const lowCount = data.moves.filter((m) => ['termine', 'facture', 'paye'].includes(m.status) && isLowMargin(m, data)).length
 
   const B = SETTINGS_BOUNDS
   return (
@@ -38,6 +39,7 @@ export function SettingsScreen() {
         <p className="tabular text-xl font-semibold text-ink" data-testid="settings-preview">
           {rev ? Math.round((mar / rev) * 100) : 0} % · {fmtMoney(mar, lang, false)}
         </p>
+        <p className="tabular text-[15px] text-muted">{t('settings.lowCount', { n: lowCount })}</p>
         <Button
           size="sm"
           variant="ghost"

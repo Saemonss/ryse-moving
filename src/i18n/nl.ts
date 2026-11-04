@@ -343,6 +343,7 @@ export const nl: Dictionary = {
     perKm: '€ / km',
     consumption: 'Verbruik: {n} l / 100 km',
     range: 'Toegelaten waarden: {range}',
+    lowCount: 'Uitgevoerde dossiers onder de drempel: {n}',
   },
   gerant: {
     hello: 'Goedendag {name}',

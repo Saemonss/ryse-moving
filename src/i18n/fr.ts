@@ -338,6 +338,7 @@ export const fr = {
     perKm: '€ / km',
     consumption: 'Consommation : {n} L / 100 km',
     range: 'Valeurs acceptées : {range}',
+    lowCount: 'Dossiers réalisés sous le seuil : {n}',
   },
   gerant: {
     hello: 'Bonjour {name}',

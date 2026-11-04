@@ -8,7 +8,19 @@
 import type { Locator, Page } from '@playwright/test'
 import { LANGS, VIEWS, expect, openFresh, test } from './fixtures'
 
-const SCREENS = [...VIEWS, 'charte'] as const
+const SCREENS = [
+  ...VIEWS,
+  'gerant/demenagements',
+  'gerant/dossier/m-13',
+  'gerant/planning',
+  'gerant/equipe',
+  'gerant/flotte',
+  'gerant/rentabilite',
+  'gerant/parametres',
+  'planificateur/absences',
+  'planificateur/a-planifier',
+  'charte',
+] as const
 const CLICKABLE = 'button, a[href], [role="tab"], input, textarea, select'
 const MAX_DEPTH = 3
 
@@ -77,7 +89,9 @@ async function isMarkedActive(el: Locator) {
 
 async function act(el: Locator) {
   const tag = await el.evaluate((e) => e.tagName.toLowerCase())
-  if (tag === 'input' || tag === 'textarea') await el.fill(`${(await el.inputValue()) || ''}Ka`)
+  const numeric = (await el.getAttribute('inputmode')) === 'decimal'
+  if (numeric) await el.fill('12')
+  else if (tag === 'input' || tag === 'textarea') await el.fill(`${(await el.inputValue()) || ''}Ka`)
   else if (tag === 'select') {
     // Choisir une autre option que celle en cours
     const next = await el.evaluate((s) => {

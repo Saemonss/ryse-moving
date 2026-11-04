@@ -69,7 +69,7 @@ for (const lang of ['fr', 'nl'] as const) {
   })
 }
 
-for (const view of ['gerant', 'planificateur', 'commercial', 'comptabilite']) {
+for (const view of ['gerant', 'gerant/demenagements', 'gerant/dossier/m-13', 'gerant/planning', 'gerant/equipe', 'gerant/flotte', 'gerant/rentabilite', 'gerant/parametres', 'planificateur', 'planificateur/absences', 'planificateur/a-planifier', 'commercial', 'comptabilite']) {
   test(`Néerlandais sur un écran de 1280 px (${view}) : rien ne déborde`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await openFresh(page, view, 'nl')
@@ -86,12 +86,12 @@ for (const view of ['gerant', 'planificateur', 'commercial', 'comptabilite']) {
 
 // Les données dépendent du jour : on rejoue la démo pour chacun des 7 jours de la semaine.
 for (const [i, day] of ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'].entries()) {
-  test(`Un ${day} : 5 alertes, chacune réglable, et une mission pour Karim`, async ({ page }) => {
+  test(`Un ${day} : 6 alertes, 5 réglables en un clic, et une mission pour Karim`, async ({ page }) => {
     await page.clock.setFixedTime(new Date(2026, 10, 2 + i, 9, 0)) // lundi 2 novembre 2026 + i jours
     await openFresh(page, 'gerant', 'fr')
     const actions = page.locator('main section').filter({ hasText: 'Alertes' }).getByRole('button')
-    await expect(actions).toHaveCount(5)
-    for (let n = 5; n > 0; n--) {
+    await expect(actions).toHaveCount(6)
+    for (let n = 6; n > 1; n--) {
       await actions.first().click()
       const apply = page.locator('dialog[open] footer button').nth(1)
       await expect(apply).toBeVisible({ timeout: 4000 })
