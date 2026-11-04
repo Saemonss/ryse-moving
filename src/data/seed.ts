@@ -13,6 +13,8 @@ import type {
 } from './types'
 
 const SEED = 20261104
+/** Cliente fictive affichée dans la vue Client. */
+export const CLIENT_CUSTOMER_ID = 'c-client'
 
 export const COMPANY: Company = {
   name: 'RySe Moving',
@@ -180,8 +182,9 @@ export function createSeed(today: ISODate): DemoData {
     }
     const contact = isCompany ? `${rnd.pick(FIRST_NAMES[gender])} ${rnd.pick(LAST_NAMES)}` : undefined
     const slug = name.toLowerCase().normalize('NFD').replace(/[^a-z ]/g, '').trim().replace(/\s+/g, '.')
+    const customerId = row.special === 'client' ? CLIENT_CUSTOMER_ID : `c-${i + 1}`
     customers.push({
-      id: `c-${i + 1}`, kind: isCompany ? 'entreprise' : 'particulier', name, contact, gender: custGender,
+      id: customerId, kind: isCompany ? 'entreprise' : 'particulier', name, contact, gender: custGender,
       phone: phone(rnd, fromCity.country), email: `${slug}@exemple.test`,
     })
 
@@ -227,7 +230,7 @@ export function createSeed(today: ISODate): DemoData {
     const move: Move = {
       id,
       ref: `RM-${String(year).slice(2)}-${400 + i + 1}`,
-      customerId: `c-${i + 1}`,
+      customerId,
       type: row.type,
       status: row.status,
       date,
