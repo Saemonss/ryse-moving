@@ -28,7 +28,14 @@ export function alertContent(alert: Alert, data: DemoData, t: T, lang: Lang) {
     case 'damage':
       return {
         title: t('alerts.damage.title'),
-        text: t('alerts.damage.text', { item: t('items.commode'), client, date: move ? fmtDate(move.date, lang, 'dayMonth') : '' }),
+        text: t('alerts.damage.text', {
+          item: (() => {
+            const dmg = data.days.find((d) => d.id === alert.dayId)?.missions.find((m) => m.moveId === alert.moveId)?.damage
+            return dmg ? t(`terrain.items.${dmg.item}`) : ''
+          })(),
+          client,
+          date: move ? fmtDate(move.date, lang, 'dayMonth') : '',
+        }),
         action: t('alerts.damage.action'),
       }
     case 'invoice':

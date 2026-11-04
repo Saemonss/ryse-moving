@@ -5,6 +5,7 @@
 import { addDays, diffDays, fromISO } from './dates'
 import { applyFix, detectConflicts } from './conflicts'
 import { isLowMargin } from './margin'
+import { openClaimData } from './field'
 import { vehicleBusy } from './selectors'
 import type { Alert, DemoData, ISODate } from './types'
 
@@ -45,8 +46,11 @@ export function deriveAlerts(data: DemoData, today: ISODate): Alert[] {
   }
 
   // 4. Objet signalé abîmé
-  for (const m of data.moves) {
-    if (m.damage && !m.damage.claimOpened) alerts.push({ id: `damage-${m.id}`, kind: 'damage', tone: 'warning', moveId: m.id })
+  for (const day of data.days) {
+    for (const m of day.missions) {
+      if (m.damage && !data.claims.some((c) => c.moveId === m.moveId))
+        alerts.push({ id: `damage-${m.moveId}`, kind: 'damage', tone: 'warning', moveId: m.moveId, dayId: day.id })
+    }
   }
 
   // 5. Contrôle technique dans les 30 jours
@@ -87,7 +91,7 @@ export function fixAlert(data: DemoData, alert: Alert, today: ISODate): DemoData
     case 'invoice':
       return patchMove(alert.moveId, (m) => ({ ...m, paymentReminderOn: today }))
     case 'damage':
-      return patchMove(alert.moveId, (m) => (m.damage ? { ...m, damage: { ...m.damage, claimOpened: true } } : m))
+      return alert.dayId && alert.moveId ? openClaimData(data, alert.dayId, alert.moveId, today).data : data
     case 'inspection':
       return {
         ...data,

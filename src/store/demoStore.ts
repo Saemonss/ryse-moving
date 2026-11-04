@@ -11,14 +11,43 @@ import { fixAlert } from '../data/scenarios'
 import { applyFix, detectConflicts } from '../data/conflicts'
 import { assignMoveData } from '../data/planning'
 import { todayISO } from '../data/dates'
-import type { Absence, Alert, DemoData, ISODate, PlanConflict, Settings } from '../data/types'
+import type { Absence, Alert, Claim, DemoData, DriverDay, ISODate, PlanConflict, Settings } from '../data/types'
+import { MISSION_DONE, advanceMissionDemo, applyValidation, dayId, openClaimData, syncOffice } from '../data/field'
 
 export const STORAGE_KEY = 'ryse-moving-demo'
-const SCHEMA_VERSION = 4
+const SCHEMA_VERSION = 5
+
+/** Ce qui attend dans la file du téléphone quand il n'y a pas de réseau. */
+export type QueueLabel = 'dayStart' | 'vehicleCheck' | 'step' | 'photos' | 'damage' | 'signature' | 'expense' | 'pause' | 'dayEnd' | 'daySent'
+export interface QueueItem {
+  id: number
+  label: QueueLabel
+  at: string
+}
 
 interface DemoState {
   seedDay: ISODate
+  /** Données vues par le bureau (gérant, planificateur…). */
   data: DemoData
+  /** Journées telles qu'enregistrées sur les téléphones des chauffeurs. */
+  phoneDays: DriverDay[]
+  /** Chauffeur connecté sur le téléphone de démo (null = écran de connexion). */
+  session: string | null
+  /** Réseau du téléphone (le présentateur peut simuler une coupure). */
+  online: boolean
+  queue: QueueItem[]
+  login: (staffId: string) => void
+  logout: () => void
+  /** Toute action du chauffeur passe par ici : enregistrée sur le téléphone, puis envoyée (ou mise en file). */
+  field: (label: QueueLabel, update: (days: DriverDay[]) => DriverDay[]) => void
+  /** Coupe ou rétablit le réseau. Au retour : renvoie le nombre d'éléments envoyés. */
+  setOnline: (online: boolean) => number
+  /** Menu présentateur : avance la mission en cours (Karim, sinon Didier). Renvoie le prénom concerné. */
+  advanceMission: () => string | null
+  validateDay: (dayId: string) => void
+  correctDay: (dayId: string, field: 'hours' | 'km' | 'expenses', from: number, to: number) => void
+  openClaim: (dayId: string, moveId: string) => string
+  setClaimStatus: (claimId: string, status: Claim['status']) => void
   startDriverDay: (moveId: string) => void
   /** Renvoie false si la situation a changé entre-temps (rien n'est modifié). */
   resolveAlert: (alert: Alert) => boolean
@@ -83,8 +112,11 @@ const safeStorage: StateStorage = {
 
 const fresh = () => {
   const day = todayISO()
-  return { seedDay: day, data: createSeed(day) }
+  const data = createSeed(day)
+  return { seedDay: day, data, phoneDays: structuredClone(data.days), session: null, online: true, queue: [] as QueueItem[] }
 }
+
+let queueSeq = 1
 
 export const useDemo = create<DemoState>()(
   persist(
@@ -97,8 +129,70 @@ export const useDemo = create<DemoState>()(
           data: { ...s.data, moves: s.data.moves.map((m) => (m.id === moveId ? { ...m, status: 'enCours', startedAt: stamp } : m)) },
         }))
       },
+      login: (staffId) => set({ session: staffId }),
+      logout: () => set({ session: null }),
+      field: (label, update) =>
+        set((s) => {
+          const phoneDays = update(s.phoneDays)
+          if (s.online) return { phoneDays, data: syncOffice(s.data, phoneDays) }
+          return { phoneDays, queue: [...s.queue, { id: queueSeq++, label, at: new Date().toISOString() }] }
+        }),
+      setOnline: (online) => {
+        const s = get()
+        if (!online) {
+          set({ online: false })
+          return 0
+        }
+        const sent = s.queue.length
+        set({ online: true, queue: [], data: syncOffice(s.data, s.phoneDays) })
+        return sent
+      },
+      advanceMission: () => {
+        const s = get()
+        for (const staffId of ['s-karim', 's-didier']) {
+          const day = s.phoneDays.find((d) => d.id === dayId(staffId, s.seedDay) && d.status === 'started')
+          const mission = day?.missions.find((m) => m.step < MISSION_DONE)
+          if (!day || !mission) continue
+          const move = s.data.moves.find((m) => m.id === mission.moveId)
+          const client = s.data.customers.find((c) => c.id === move?.customerId)?.name ?? ''
+          const next = advanceMissionDemo(mission, client, new Date().toISOString())
+          get().field(next.step === MISSION_DONE ? 'signature' : 'step', (days) =>
+            days.map((d) => (d.id === day.id ? { ...d, missions: d.missions.map((m) => (m.moveId === next.moveId ? next : m)) } : d)),
+          )
+          return s.data.staff.find((p) => p.id === staffId)?.firstName ?? ''
+        }
+        return null
+      },
+      validateDay: (id) =>
+        set((s) => {
+          const day = s.data.days.find((d) => d.id === id)
+          return day ? { data: applyValidation(s.data, day, new Date().toISOString()) } : {}
+        }),
+      correctDay: (id, fieldName, from, to) =>
+        set((s) => ({
+          data: {
+            ...s.data,
+            days: s.data.days.map((d) =>
+              d.id !== id
+                ? d
+                : {
+                    ...d,
+                    endKm: fieldName === 'km' && d.check ? d.check.km + Math.max(0, Math.round(to)) : d.endKm,
+                    corrections: [...d.corrections, { field: fieldName, from, to: Math.max(0, to), at: new Date().toISOString() }],
+                  },
+            ),
+          },
+        })),
+      openClaim: (id, moveId) => {
+        const r = openClaimData(get().data, id, moveId, new Date().toISOString())
+        set({ data: r.data })
+        return r.claimId
+      },
+      setClaimStatus: (claimId, status) =>
+        set((s) => ({ data: { ...s.data, claims: s.data.claims.map((c) => (c.id === claimId ? { ...c, status } : c)) } })),
       resolveAlert: (alert) => {
         if (alert.kind === 'conflict') return alert.conflict ? get().resolveConflict(alert.conflict) : false
+        if (alert.kind === 'damage') return !!(alert.dayId && alert.moveId && get().openClaim(alert.dayId, alert.moveId))
         set((s) => ({ data: fixAlert(s.data, alert, s.seedDay) }))
         return true
       },
@@ -128,11 +222,11 @@ export const useDemo = create<DemoState>()(
       // À augmenter dès que la forme des données change : les anciennes sauvegardes sont alors ignorées.
       version: SCHEMA_VERSION,
       storage: createJSONStorage(() => safeStorage),
-      partialize: (s) => ({ seedDay: s.seedDay, data: s.data }),
+      partialize: (s) => ({ seedDay: s.seedDay, data: s.data, phoneDays: s.phoneDays, session: s.session, online: s.online, queue: s.queue }),
       merge: (persisted, current) => {
         const p = persisted as Partial<DemoState> | undefined
-        if (!p || p.seedDay !== todayISO() || !isValidData(p.data)) return current
-        return { ...current, seedDay: p.seedDay, data: p.data }
+        if (!p || p.seedDay !== todayISO() || !isValidData(p.data) || !Array.isArray(p.phoneDays)) return current
+        return { ...current, seedDay: p.seedDay, data: p.data, phoneDays: p.phoneDays, session: p.session ?? null, online: p.online ?? true, queue: p.queue ?? [] }
       },
       migrate: () => fresh(),
     },
@@ -147,6 +241,8 @@ function isValidData(d: unknown): d is DemoData {
     typeof x.company === 'object' &&
     typeof x.settings === 'object' &&
     Array.isArray(x.absences) &&
+    Array.isArray(x.days) &&
+    Array.isArray(x.claims) &&
     [x.staff, x.teams, x.vehicles, x.customers, x.moves].every((list) => Array.isArray(list) && list.length > 0)
   )
 }

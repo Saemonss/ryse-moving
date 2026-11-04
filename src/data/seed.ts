@@ -9,8 +9,9 @@ import { CITIES, COMPANY_NAMES, FIRST_NAMES, LAST_NAMES, STREETS } from './lists
 import { createRandom, type Random } from './random'
 import { addDays, fromISO } from './dates'
 import { distanceKm, plannedHoursFor } from './geo'
+import { DEMO_SIGNATURE, dayId } from './field'
 import type {
-  Absence, Company, Customer, DemoData, Gender, ISODate, Move, MoveOption, MoveStatus, MoveType, Settings, Site, Staff, Team, Vehicle,
+  Absence, Company, Customer, DemoData, DriverDay, Gender, ISODate, Move, MoveOption, MoveStatus, MoveType, Settings, Site, Staff, Team, Vehicle,
 } from './types'
 
 const SEED = 20261104
@@ -62,7 +63,7 @@ export const DEFAULT_SETTINGS: Settings = {
   marginThresholdPct: 25,
 }
 
-type Special = 'late' | 'damage' | 'conflictA' | 'conflictB' | 'quote6' | 'karim' | 'client' | 'started' | 'lowDistance' | 'overHours' | 'liftUnbilled'
+type Special = 'late' | 'conflictA' | 'conflictB' | 'quote6' | 'karim' | 'client' | 'started' | 'lowDistance' | 'overHours' | 'liftUnbilled'
 interface PlanRow {
   status: MoveStatus
   type: MoveType
@@ -86,7 +87,7 @@ const PLAN: PlanRow[] = [
   { status: 'facture', type: 'maison', day: -9, from: 'namur', to: 'wavre', vol: 52, crew: 'A', opts: ['emballage'] },
   { status: 'facture', type: 'appartement', day: -8, from: 'lille', to: 'roubaix', vol: 26, crew: 'L' },
   { status: 'termine', type: 'debarras', day: -6, from: 'schaerbeek', vol: 18, crew: 'C' },
-  { status: 'termine', type: 'maison', day: -5, from: 'nivelles', to: 'bruxelles', vol: 50, crew: 'A', special: 'damage' },
+  { status: 'termine', type: 'maison', day: -5, from: 'nivelles', to: 'bruxelles', vol: 50, crew: 'A' },
   { status: 'termine', type: 'appartement', day: -4, from: 'mechelen', to: 'leuven', vol: 32, crew: 'B', special: 'liftUnbilled' },
   { status: 'termine', type: 'gardeMeuble', day: -3, from: 'ixelles', vol: 20, crew: 'C', opts: ['gardeMeuble'] },
   { status: 'facture', type: 'international', day: -2, from: 'lille', to: 'liege', vol: 38, crew: 'L' },
@@ -282,7 +283,6 @@ export function createSeed(today: ISODate): DemoData {
     if (row.special === 'karim') move.note = 'piano'
     if (row.special === 'conflictB') move.note = 'parking'
     if (row.special === 'started') move.startedAt = `${date}T07:04`
-    if (row.special === 'damage') move.damage = { item: 'commode', reportedBy: 's-didier', claimOpened: false }
 
     if (row.status === 'facture' || row.status === 'paye') {
       move.invoicedOn = addDays(date, 1)
@@ -298,5 +298,55 @@ export function createSeed(today: ISODate): DemoData {
     .sort((a, b) => (a.invoicedOn! < b.invoicedOn! ? -1 : 1))
     .forEach((m, k) => (m.invoiceNumber = `F-${year}-${String(87 + k).padStart(4, '0')}`))
 
-  return { company: COMPANY, settings: DEFAULT_SETTINGS, teams: TEAMS, staff, absences, vehicles, customers, moves }
+  return { company: COMPANY, settings: DEFAULT_SETTINGS, teams: TEAMS, staff, absences, vehicles, customers, moves, days: seedDays(moves, customers), claims: [] }
+}
+
+/**
+ * Journées terrain de départ :
+ * - Didier (aujourd'hui) : mission en cours, à l'étape « Chargement » ;
+ * - Youssef (il y a quelques jours) : journée envoyée au bureau, à contrôler, avec un miroir rayé signalé.
+ * Karim n'a pas encore commencé : c'est la journée qu'on joue en direct.
+ */
+function seedDays(moves: Move[], customers: Customer[]): DriverDay[] {
+  const days: DriverDay[] = []
+  const t = (date: string, hhmm: string) => `${date}T${hhmm}`
+  const live = moves.find((m) => m.status === 'enCours' && m.teamIds[0] === 's-didier')
+  if (live) {
+    const d = live.date
+    days.push({
+      id: dayId('s-didier', d), staffId: 's-didier', date: d, status: 'started', startedAt: t(d, '06:52'), startPlace: 'nivelles',
+      vehicleId: live.vehicleIds[0] ?? 'v-2',
+      check: { km: 48210, odometerPhoto: 'demo:compteur', fuel: 'troisQuarts', ok: true },
+      pauses: [], expenses: [], corrections: [],
+      missions: [{
+        moveId: live.id, step: 3, times: [t(d, '07:04'), t(d, '07:41'), t(d, '08:12')],
+        startPhotos: [{ room: 'salon', photo: 'demo:salon' }, { room: 'chambre', photo: 'demo:chambre' }, { room: 'cuisine', photo: 'demo:cuisine' }],
+        fragile: ['miroir', 'vaisselle'], reservesStart: ['rayuresExistantes'], parcels: 0, specialItems: [], endPhotos: [], reservesEnd: [],
+      }],
+    })
+  }
+  const sent = moves.find((m) => m.status === 'termine' && m.type === 'gardeMeuble' && m.teamIds[0] === 's-youssef')
+  if (sent) {
+    const d = sent.date
+    const client = customers.find((c) => c.id === sent.customerId)?.name ?? ''
+    days.push({
+      id: dayId('s-youssef', d), staffId: 's-youssef', date: d, status: 'sent', startedAt: t(d, '07:12'), startPlace: 'nivelles',
+      vehicleId: sent.vehicleIds[0] ?? 'v-3',
+      check: { km: 61240, odometerPhoto: 'demo:compteur', fuel: 'troisQuarts', ok: true },
+      pauses: [{ start: t(d, '10:15'), end: t(d, '10:35') }],
+      expenses: [{ id: 'exp-1', kind: 'parking', cents: 1250, photo: 'demo:ticket', at: t(d, '08:05'), moveId: sent.id }],
+      corrections: [],
+      endedAt: t(d, '12:40'), endKm: 61306, endPlace: 'nivelles', sentAt: t(d, '12:44'),
+      missions: [{
+        moveId: sent.id, step: 7,
+        times: ['07:30', '08:02', '08:31', '09:40', '10:55', '11:20', '11:58'].map((h) => t(d, h)),
+        startPhotos: [{ room: 'salon', photo: 'demo:salon' }, { room: 'chambre', photo: 'demo:chambre' }],
+        fragile: ['miroir', 'tableau'], reservesStart: ['meubleDemonte'], parcels: 27, specialItems: ['armoire'],
+        endPhotos: [{ room: 'cave', photo: 'demo:cartons' }], reservesEnd: [],
+        damage: { item: 'miroir', type: 'rayure', severity: 'leger', photo: 'demo:rayure' },
+        signature: { name: client, image: DEMO_SIGNATURE, at: t(d, '11:58') },
+      }],
+    })
+  }
+  return days
 }

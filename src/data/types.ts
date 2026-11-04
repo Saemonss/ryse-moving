@@ -94,12 +94,6 @@ export type MoveStatus = 'demande' | 'visite' | 'devisEnvoye' | 'devisSigne' | '
 export type MoveType = 'appartement' | 'maison' | 'bureaux' | 'international' | 'gardeMeuble' | 'debarras'
 export type MoveOption = 'emballage' | 'monteMeubles' | 'gardeMeuble'
 
-export interface Damage {
-  item: 'commode'
-  reportedBy: string
-  claimOpened: boolean
-}
-
 export interface Move {
   id: string
   ref: string
@@ -133,7 +127,7 @@ export interface Move {
   /** Monte-meubles loué (notre monte-meubles était déjà pris ce jour-là). */
   liftRented?: boolean
   /** Coûts supplémentaires (en centimes), ex. location d'un monte-meubles. */
-  extraCosts?: { kind: 'liftRental'; cents: number }[]
+  extraCosts?: { kind: 'liftRental' | 'expenses'; cents: number }[]
   requestedOn: ISODate
   visitOn?: ISODate
   quoteSentOn?: ISODate
@@ -145,7 +139,6 @@ export interface Move {
   invoiceDueOn?: ISODate
   paymentReminderOn?: ISODate
   paidOn?: ISODate
-  damage?: Damage
 }
 
 /** Équipe type : un chef, ses équipiers, son camion habituel. */
@@ -171,6 +164,10 @@ export interface DemoData {
   teams: Team[]
   /** Dernière publication du planning aux équipes. */
   published?: { at: string; staffIds: string[] }
+  /** Journées des chauffeurs telles que le BUREAU les a reçues (dernière synchronisation). */
+  days: DriverDay[]
+  /** Dossiers litige ouverts suite à un dégât. */
+  claims: Claim[]
   staff: Staff[]
   absences: Absence[]
   vehicles: Vehicle[]
@@ -179,6 +176,83 @@ export interface DemoData {
 }
 
 export type AlertKind = 'conflict' | 'quote' | 'damage' | 'invoice' | 'inspection' | 'lowMargin'
+
+// ─── Terrain : journée du chauffeur ───────────────────────────────────────────────────────────
+
+/** Photo : illustration de démonstration (« demo:salon ») ou image choisie sur le PC (data URL réduite). */
+export type PhotoRef = string
+export type RoomKey = 'salon' | 'chambre' | 'cuisine' | 'bureau' | 'cave'
+export type FragileKey = 'miroir' | 'vaisselle' | 'tableau' | 'ecran' | 'piano'
+export type ReserveKey = 'rayuresExistantes' | 'meubleDemonte' | 'cartonsClient' | 'accesDifficile'
+export type SpecialKey = 'piano' | 'frigo' | 'armoire' | 'coffre' | 'aquarium'
+export type DamageType = 'rayure' | 'casse' | 'tache' | 'bosse'
+export type Severity = 'leger' | 'moyen' | 'grave'
+export type FuelLevel = 'quart' | 'demi' | 'troisQuarts' | 'plein'
+export type ExpenseKind = 'peage' | 'carburant' | 'parking'
+
+export interface Damage {
+  item: FragileKey | SpecialKey | 'meuble'
+  type: DamageType
+  severity: Severity
+  photo: PhotoRef
+}
+
+/** Une mission (= un déménagement) vue du terrain. step = nombre d'étapes faites (0 à 7, 7 = terminée). */
+export interface MissionLog {
+  moveId: string
+  step: number
+  /** Heure de chaque étape franchie (ISO). */
+  times: string[]
+  startPhotos: { room: RoomKey; photo: PhotoRef }[]
+  fragile: FragileKey[]
+  reservesStart: ReserveKey[]
+  parcels: number
+  specialItems: SpecialKey[]
+  endPhotos: { room: RoomKey; photo: PhotoRef }[]
+  reservesEnd: ReserveKey[]
+  damage?: Damage
+  signature?: { name: string; image: string; at: string }
+}
+
+export interface Expense {
+  id: string
+  kind: ExpenseKind
+  cents: number
+  photo: PhotoRef
+  at: string
+  /** Mission en cours au moment de la saisie (le coût lui est rattaché). */
+  moveId?: string
+}
+
+export interface DriverDay {
+  id: string
+  staffId: string
+  date: ISODate
+  status: 'started' | 'ended' | 'sent' | 'validated'
+  startedAt: string
+  startPlace: string
+  vehicleId: string
+  check?: { km: number; odometerPhoto: PhotoRef; fuel: FuelLevel; ok: boolean; problemPhoto?: PhotoRef }
+  pauses: { start: string; end?: string }[]
+  expenses: Expense[]
+  missions: MissionLog[]
+  endedAt?: string
+  endKm?: number
+  endPlace?: string
+  sentAt?: string
+  /** Corrections faites par le gérant (trace). */
+  corrections: { field: 'hours' | 'km' | 'expenses'; from: number; to: number; at: string }[]
+  validatedAt?: string
+}
+
+export interface Claim {
+  id: string
+  moveId: string
+  dayId: string
+  openedAt: string
+  status: 'ouvert' | 'enCours' | 'clos'
+  damage: Damage
+}
 
 /** Les alertes sont calculées à partir des données (jamais stockées) : régler le problème les fait disparaître. */
 export interface Alert {
@@ -193,6 +267,8 @@ export interface Alert {
   count?: number
   /** Conflit de planning à l'origine de l'alerte (kind 'conflict'). */
   conflict?: PlanConflict
+  /** Journée chauffeur concernée (kind 'damage'). */
+  dayId?: string
 }
 
 export type ConflictKind = 'vehicleDouble' | 'personDouble' | 'personAbsent' | 'skillMissing' | 'overCapacity' | 'inspectionOverdue'

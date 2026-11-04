@@ -3,7 +3,9 @@
  * Sur les vues téléphone (pas de barre latérale), le logo s'affiche ici.
  */
 import { useEffect, useRef, useState } from 'react'
-import { FlaskConical, RotateCcw, Settings } from 'lucide-react'
+import { FlaskConical, RotateCcw, Settings, SkipForward, Wifi, WifiOff } from 'lucide-react'
+import { useDemo } from '../store/demoStore'
+import { toast } from '../ui/Toast'
 import { useI18n, type Lang } from '../i18n'
 import { Logo } from '../ui/Logo'
 import { go, type Route } from './router'
@@ -103,6 +105,9 @@ function PresenterMenu() {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const setResetOpen = useShell((s) => s.setResetOpen)
+  const online = useDemo((s) => s.online)
+  const setOnline = useDemo((s) => s.setOnline)
+  const advanceMission = useDemo((s) => s.advanceMission)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -139,7 +144,7 @@ function PresenterMenu() {
       {open && (
         <div
           data-popover
-          className="absolute right-0 top-12 z-40 w-80 origin-top-right rounded-2xl border border-line bg-white p-2 shadow-float animate-[rm-scale-in_160ms_var(--ease-out)]"
+          className="absolute right-0 top-12 z-40 w-[22rem] origin-top-right rounded-2xl border border-line bg-white p-2 shadow-float animate-[rm-scale-in_160ms_var(--ease-out)]"
         >
           <p className="px-3 pb-1 pt-2 text-[13px] font-medium text-muted">{t('shell.presenterMenu')}</p>
           <button
@@ -152,6 +157,31 @@ function PresenterMenu() {
           >
             <RotateCcw size={18} aria-hidden="true" className="text-accent" />
             {t('shell.reset')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              const sent = setOnline(!online)
+              if (online) toast(t('presenter.offlineOn'), 'info')
+              else toast(t('terrain.offline.sentBack', { n: sent }))
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-ink transition-colors hover:bg-surface"
+          >
+            {online ? <WifiOff size={18} aria-hidden="true" className="text-accent" /> : <Wifi size={18} aria-hidden="true" className="text-success" />}
+            {t(online ? 'presenter.offline' : 'presenter.online')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              const name = advanceMission()
+              toast(name ? t('presenter.advanced', { name }) : t('presenter.nothing'), name ? 'success' : 'info')
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-ink transition-colors hover:bg-surface"
+          >
+            <SkipForward size={18} aria-hidden="true" className="text-accent" />
+            {t('presenter.advance')}
           </button>
           <div className="mt-1 border-t border-line px-3 pb-2 pt-3">
             <p className="mb-2 text-[13px] font-medium text-muted">{t('shell.shortcuts')}</p>

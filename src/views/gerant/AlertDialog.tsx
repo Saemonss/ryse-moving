@@ -13,6 +13,7 @@ import { Button } from '../../ui/Button'
 import { TextArea } from '../../ui/Field'
 import { toast } from '../../ui/Toast'
 import { ConflictDetail } from '../shared/ConflictDetail'
+import { PhotoView } from '../../ui/Photo'
 
 export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: () => void }) {
   const { t, lang } = useI18n()
@@ -97,17 +98,24 @@ function AlertBody({ alert, data }: { alert: Alert; data: DemoData }) {
         </div>
       )
     case 'damage': {
-      const staff = byId(data.staff, move?.damage?.reportedBy)
+      const day = data.days.find((d) => d.id === alert.dayId)
+      const damage = day?.missions.find((m) => m.moveId === alert.moveId)?.damage
+      const staff = byId(data.staff, day?.staffId)
+      if (!damage) return null
       return (
         <div className="space-y-4">
           <p>
             {t('alerts.damage.explain', { staff: staff ? fullName(staff) : '', date: move ? fmtDate(move.date, lang, 'long') : '', ref: move?.ref ?? '' })}
           </p>
-          <div className="rounded-xl border border-line px-4 py-3">
-            <p className="text-sm font-medium text-muted">{t('alerts.damage.noteLabel')}</p>
-            <p className="mt-1">
-              <strong className="font-semibold">{t('items.commode')}</strong> — {t('notes.damage')}
-            </p>
+          <div className="grid grid-cols-[140px_1fr] items-start gap-4 rounded-xl border border-line p-3">
+            <PhotoView photo={damage.photo} />
+            <div>
+              <p className="text-sm font-medium text-muted">{t('alerts.damage.noteLabel')}</p>
+              <p className="mt-1 font-semibold">{t(`terrain.items.${damage.item}`)}</p>
+              <p className="text-[15px]">
+                {t(`terrain.damageTypes.${damage.type}`)} · {t(`terrain.severity.${damage.severity}`)}
+              </p>
+            </div>
           </div>
         </div>
       )
