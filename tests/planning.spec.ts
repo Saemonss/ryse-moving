@@ -76,3 +76,15 @@ test('Navigation à ± 10 semaines puis « Aujourd\'hui »', async ({ page }) =>
   await page.getByRole('button', { name: "Aujourd'hui" }).click()
   await expect(title).toHaveText(initial)
 })
+
+test('Un dossier déjà réalisé ne peut pas être replanifié depuis le planning', async ({ page }) => {
+  await openFresh(page, 'planificateur', 'fr')
+  await page.getByRole('button', { name: 'Semaine précédente' }).click()
+  const before = await page.evaluate(() => localStorage.getItem('ryse-moving-demo'))
+  await page.locator('[data-cell^="t-"] [data-move]').first().click()
+  const dialog = page.locator('dialog[open]')
+  await expect(dialog).toContainText('il ne peut plus être déplacé')
+  await expect(dialog.getByRole('button', { name: 'Affecter', exact: true })).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Fermer' }).first().click()
+  expect(await page.evaluate(() => localStorage.getItem('ryse-moving-demo'))).toBe(before)
+})

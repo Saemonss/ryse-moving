@@ -18,6 +18,8 @@ import { Planning } from '../shared/planning/Planning'
 import { TYPE_COLORS } from '../shared/planning/planningKit'
 import { conflictTexts } from '../shared/conflictText'
 import { AssignDialog } from './AssignDialog'
+import { MoveSummaryDialog } from './MoveSummaryDialog'
+import { PLANNABLE } from '../../data/planning'
 import { PublishDialog } from './PublishDialog'
 
 export function PlanificateurPlanning() {
@@ -26,14 +28,17 @@ export function PlanificateurPlanning() {
   const today = useDemo((s) => s.seedDay)
   const assignMove = useDemo((s) => s.assignMove)
   const [assigning, setAssigning] = useState<string | null>(null)
+  const [viewing, setViewing] = useState<string | null>(null)
   const [publishing, setPublishing] = useState(false)
+  /** Dossier encore planifiable → « Affecter » ; sinon (en cours, réalisé) → résumé en lecture seule. */
+  const openMove = (id: string) => (PLANNABLE.includes(byId(data.moves, id)?.status ?? '') ? setAssigning(id) : setViewing(id))
 
   const toPlan = data.moves.filter((m) => m.status === 'devisSigne').sort((a, b) => a.date.localeCompare(b.date))
   const conflicts = useMemo(() => detectConflicts(data).filter((c) => c.date >= today), [data, today])
 
   const onDrop = (moveId: string, crewId: string, date: ISODate) => {
     const move = byId(data.moves, moveId)
-    if (!move) return
+    if (!move || !PLANNABLE.includes(move.status)) return
     if (date < today) {
       toast(t('planif.pastRefused'), 'info')
       return
@@ -84,7 +89,7 @@ export function PlanificateurPlanning() {
 
       <Planning
         editable
-        onOpenMove={setAssigning}
+        onOpenMove={openMove}
         onDrop={onDrop}
         toolbar={
           <>
@@ -101,6 +106,7 @@ export function PlanificateurPlanning() {
       />
 
       <AssignDialog moveId={assigning} onClose={() => setAssigning(null)} />
+      <MoveSummaryDialog moveId={viewing} onClose={() => setViewing(null)} />
       <PublishDialog open={publishing} onClose={() => setPublishing(false)} />
     </>
   )
@@ -131,8 +137,8 @@ function ConflictPanel({ conflicts }: { conflicts: PlanConflict[] }) {
                   size="sm"
                   variant="secondary"
                   onClick={() => {
-                    resolveConflict(c)
-                    toast(t('conflicts.done'))
+                    const ok = resolveConflict(c)
+                    toast(ok ? t('conflicts.done') : t('conflicts.stale'), ok ? 'success' : 'info')
                   }}
                 >
                   {t('conflicts.resolve')}

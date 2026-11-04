@@ -11,8 +11,13 @@ export interface AssignPlan {
   vehicleId: string
 }
 
+/** Statuts qu'on peut encore planifier ou déplacer (jamais un dossier en cours ou réalisé). */
+export const PLANNABLE = ['devisSigne', 'planifie']
+
 export function assignMoveData(data: DemoData, moveId: string, plan: AssignPlan): DemoData {
   const team = data.teams.find((t) => t.id === plan.crewId)
+  const target = data.moves.find((m) => m.id === moveId)
+  if (!target || !PLANNABLE.includes(target.status)) return data
   return {
     ...data,
     moves: data.moves.map((m) =>
@@ -22,7 +27,7 @@ export function assignMoveData(data: DemoData, moveId: string, plan: AssignPlan)
             ...m,
             date: plan.date,
             crewId: plan.crewId,
-            status: m.status === 'enCours' ? m.status : 'planifie',
+            status: 'planifie',
             teamIds: team ? [...team.memberIds] : m.teamIds,
             vehicleIds: [plan.vehicleId, ...(m.liftUsed ? ['v-7'] : [])],
           },

@@ -242,6 +242,7 @@ export const nl: Dictionary = {
     dragHint: 'Sleep ze naar de planning',
     assign: 'Toewijzen',
     pastRefused: 'Een verhuizing kan niet in het verleden worden ingepland.',
+    locked: 'Deze verhuizing is al bezig of uitgevoerd: ze kan niet meer verplaatst worden.',
     conflictsTitle: 'Op te lossen conflicten: {n}',
     publish: 'Planning publiceren',
     publishedAt: 'Verstuurd om {time} · {n} personen',
@@ -454,6 +455,7 @@ export const nl: Dictionary = {
     resolve: 'Oplossen',
     apply: 'Oplossing toepassen',
     done: 'Conflict opgelost.',
+    stale: 'De situatie is intussen gewijzigd: er werd niets aangepast.',
   },
   chauffeur: {
     hello: 'Goedendag {name}',

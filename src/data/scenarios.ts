@@ -54,7 +54,7 @@ export function deriveAlerts(data: DemoData, today: ISODate): Alert[] {
     const days = diffDays(v.nextInspection, today)
     if (!v.inspectionBookedOn && days >= 0 && days <= VEHICLE_WARNING_DAYS) {
       let suggestedDate: ISODate | undefined
-      for (let d = 1; d < days; d++) {
+      for (let d = 0; d < Math.max(days, 1); d++) {
         const day = addDays(today, d)
         const weekday = fromISO(day).getDay()
         if (weekday !== 0 && weekday !== 6 && !vehicleBusy(data, v, day)) {
@@ -62,7 +62,7 @@ export function deriveAlerts(data: DemoData, today: ISODate): Alert[] {
           break
         }
       }
-      alerts.push({ id: `inspection-${v.id}`, kind: 'inspection', tone: 'info', vehicleId: v.id, days, suggestedDate: suggestedDate ?? addDays(today, 1) })
+      alerts.push({ id: `inspection-${v.id}`, kind: 'inspection', tone: 'info', vehicleId: v.id, days, suggestedDate: suggestedDate ?? today })
     }
   }
 

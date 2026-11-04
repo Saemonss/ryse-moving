@@ -8,7 +8,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { createSeed } from '../data/seed'
 import { fixAlert } from '../data/scenarios'
-import { applyFix } from '../data/conflicts'
+import { applyFix, detectConflicts } from '../data/conflicts'
 import { assignMoveData } from '../data/planning'
 import { todayISO } from '../data/dates'
 import type { Absence, Alert, DemoData, ISODate, PlanConflict, Settings } from '../data/types'
@@ -20,12 +20,14 @@ interface DemoState {
   seedDay: ISODate
   data: DemoData
   startDriverDay: (moveId: string) => void
-  resolveAlert: (alert: Alert) => void
+  /** Renvoie false si la situation a changé entre-temps (rien n'est modifié). */
+  resolveAlert: (alert: Alert) => boolean
   /** Planifie (ou déplace) un dossier : date, équipe type, camion. */
   assignMove: (moveId: string, plan: { date: ISODate; crewId: string; vehicleId: string }) => void
   addAbsence: (absence: Omit<Absence, 'id'>) => void
   removeAbsence: (id: string) => void
-  resolveConflict: (conflict: PlanConflict) => void
+  /** Renvoie false si le conflit n'existe plus ou n'a plus de solution (rien n'est modifié). */
+  resolveConflict: (conflict: PlanConflict) => boolean
   updateSettings: (patch: Partial<Settings>) => void
   publishPlanning: (staffIds: string[]) => void
   resetDemo: () => void
@@ -95,17 +97,28 @@ export const useDemo = create<DemoState>()(
           data: { ...s.data, moves: s.data.moves.map((m) => (m.id === moveId ? { ...m, status: 'enCours', startedAt: stamp } : m)) },
         }))
       },
-      resolveAlert: (alert) => set((s) => ({ data: fixAlert(s.data, alert, s.seedDay) })),
+      resolveAlert: (alert) => {
+        if (alert.kind === 'conflict') return alert.conflict ? get().resolveConflict(alert.conflict) : false
+        set((s) => ({ data: fixAlert(s.data, alert, s.seedDay) }))
+        return true
+      },
       assignMove: (moveId, plan) => set((s) => ({ data: assignMoveData(s.data, moveId, plan) })),
       addAbsence: (absence) =>
         set((s) => {
-          const id = `ab-${s.data.absences.length + 1}-${absence.staffId}-${absence.from}`
+          // Identifiant unique : le plus grand numéro existant + 1 (jamais réutilisé après une suppression)
+          const max = s.data.absences.reduce((n, a) => Math.max(n, Number(/^ab-(\d+)/.exec(a.id)?.[1] ?? 0)), 0)
+          const id = `ab-${max + 1}`
           const from = absence.from <= absence.to ? absence.from : absence.to
           const to = absence.from <= absence.to ? absence.to : absence.from
           return { data: { ...s.data, absences: [...s.data.absences, { ...absence, from, to, id }] } }
         }),
       removeAbsence: (id) => set((s) => ({ data: { ...s.data, absences: s.data.absences.filter((a) => a.id !== id) } })),
-      resolveConflict: (conflict) => set((s) => ({ data: applyFix(s.data, conflict) })),
+      resolveConflict: (conflict) => {
+        const fresh = detectConflicts(get().data).find((c) => c.id === conflict.id)
+        if (!fresh?.fix) return false
+        set((s) => ({ data: applyFix(s.data, fresh) }))
+        return true
+      },
       updateSettings: (patch) => set((s) => ({ data: { ...s.data, settings: sanitize({ ...s.data.settings, ...patch }) } })),
       publishPlanning: (staffIds) => set((s) => ({ data: { ...s.data, published: { at: new Date().toISOString(), staffIds } } })),
       resetDemo: () => set(fresh()),

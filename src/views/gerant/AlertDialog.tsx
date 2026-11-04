@@ -40,9 +40,9 @@ export function AlertDialog({ alert, onClose }: { alert: Alert | null; onClose: 
           {canApply && (
             <Button
               onClick={() => {
-                resolveAlert(shown)
+                const ok = resolveAlert(shown)
                 onClose()
-                toast(done)
+                toast(ok ? done : t('conflicts.stale'), ok ? 'success' : 'info')
               }}
             >
               {apply}

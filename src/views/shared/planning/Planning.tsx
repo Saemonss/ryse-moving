@@ -40,7 +40,7 @@ export function Planning({ editable = false, onOpenMove, onDrop, toolbar }: Plan
   const [over, setOver] = useState<string | null>(null)
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
-  const conflicted = useMemo(() => new Set(detectConflicts(data).map((c) => c.moveId)), [data])
+  const conflicted = useMemo(() => new Set(detectConflicts(data).flatMap((c) => (c.otherMoveId ? [c.moveId, c.otherMoveId] : [c.moveId]))), [data])
   const shown = data.moves.filter((m) => SHOWN.includes(m.status))
   const crewOf = (m: Move) => m.crewId ?? data.teams.find((tm) => tm.leaderId === m.teamIds[0])?.id
 

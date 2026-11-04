@@ -237,6 +237,7 @@ export const fr = {
     dragHint: 'Glissez-les dans le planning',
     assign: 'Affecter',
     pastRefused: 'Impossible de planifier un déménagement dans le passé.',
+    locked: 'Ce déménagement est déjà en cours ou réalisé : il ne peut plus être déplacé.',
     conflictsTitle: 'Conflits à résoudre : {n}',
     publish: 'Publier le planning',
     publishedAt: 'Envoyé à {time} · {n} personnes',
@@ -449,6 +450,7 @@ export const fr = {
     resolve: 'Résoudre',
     apply: 'Appliquer la solution',
     done: 'Conflit résolu.',
+    stale: 'La situation a changé entre-temps : rien n\'a été modifié.',
   },
   chauffeur: {
     hello: 'Bonjour {name}',
