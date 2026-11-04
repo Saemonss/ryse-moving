@@ -121,7 +121,6 @@ export const nl: Dictionary = {
     noMovesToday: 'Vandaag geen verhuizingen gepland.',
     colTime: 'Uur',
     colClient: 'Klant',
-    colRoute: 'Traject',
     colTeam: 'Ploeg',
     colVehicle: 'Wagen',
     colStatus: 'Status',

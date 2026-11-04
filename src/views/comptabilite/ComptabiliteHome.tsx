@@ -31,7 +31,7 @@ export function ComptabiliteHome() {
           { label: t('comptabilite.late'), value: fmtMoney(sum(waiting.filter(isLate)), lang, false), tone: 'danger' },
         ]}
       />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_340px]">
         <Card title={t('comptabilite.invoicesTitle')} padded={false}>
           <SimpleTable
             rows={invoices}
@@ -39,7 +39,7 @@ export function ComptabiliteHome() {
             empty={t('comptabilite.empty')}
             columns={[
               { key: 'n', label: t('comptabilite.colNumber'), render: (m) => <span className="whitespace-nowrap font-medium">{m.invoiceNumber}</span> },
-              { key: 'c', label: t('comptabilite.colClient'), render: (m) => customerOf(data, m)?.name },
+              { key: 'c', label: t('comptabilite.colClient'), render: (m) => <span className="whitespace-nowrap">{customerOf(data, m)?.name}</span> },
               { key: 'd', label: t('comptabilite.colDue'), render: (m) => <span className="whitespace-nowrap">{m.invoiceDueOn ? fmtDate(m.invoiceDueOn, lang, 'short') : ''}</span> },
               { key: 'a', label: t('comptabilite.colAmount'), className: 'text-right', render: (m) => <span className="whitespace-nowrap">{fmtMoney(m.priceCents, lang)}</span> },
               {

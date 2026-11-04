@@ -6,6 +6,9 @@ import { fmtDate, fmtMoney } from '../../i18n/format'
 import { byId } from '../../data/selectors'
 import type { Alert, DemoData } from '../../data/types'
 
+/** Plaque avec tirets insécables : elle ne se coupe jamais en fin de ligne. */
+const plateNb = (plate = '') => plate.replace(/-/g, '‑')
+
 type T = (key: TKey, vars?: Record<string, string | number>) => string
 
 export function alertContent(alert: Alert, data: DemoData, t: T, lang: Lang) {
@@ -18,7 +21,7 @@ export function alertContent(alert: Alert, data: DemoData, t: T, lang: Lang) {
       const otherClient = other ? (byId(data.customers, other.customerId)?.name ?? '') : ''
       return {
         title: t('alerts.conflict.title', { day: move ? fmtDate(move.date, lang, 'weekday') : '' }),
-        text: t('alerts.conflict.text', { vehicle: vehicle?.plate ?? '', a: client, b: otherClient }),
+        text: t('alerts.conflict.text', { vehicle: plateNb(vehicle?.plate), a: client, b: otherClient }),
         action: t('alerts.conflict.action'),
       }
     }
@@ -43,7 +46,7 @@ export function alertContent(alert: Alert, data: DemoData, t: T, lang: Lang) {
     case 'inspection':
       return {
         title: t('alerts.inspection.title', { n: alert.days ?? 0 }),
-        text: t('alerts.inspection.text', { vehicle: vehicle ? t(`vehicleKind.${vehicle.kind}`) : '', plate: vehicle?.plate ?? '' }),
+        text: t('alerts.inspection.text', { vehicle: vehicle ? t(`vehicleKind.${vehicle.kind}`) : '', plate: plateNb(vehicle?.plate) }),
         action: t('alerts.inspection.action'),
       }
   }

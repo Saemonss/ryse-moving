@@ -64,21 +64,16 @@ export function GerantHome() {
                 key: 'client',
                 label: t('gerant.colClient'),
                 render: (m) => (
-                  <div className="whitespace-nowrap">
+                  <div>
                     <p className="font-medium">{customerOf(data, m)?.name}</p>
                     <p className="text-[13px] text-muted">
+                      <span className="text-ink/80">
+                        {cityName(m.from.cityId, lang)} → {m.to ? cityName(m.to.cityId, lang) : t(m.type === 'debarras' ? 'common.recycling' : 'common.storage')}
+                      </span>
+                      {' · '}
                       {t(`moveType.${m.type}`)} · {t('common.volume', { n: m.volumeM3 })}
                     </p>
                   </div>
-                ),
-              },
-              {
-                key: 'route',
-                label: t('gerant.colRoute'),
-                render: (m) => (
-                  <span className="whitespace-nowrap">
-                    {cityName(m.from.cityId, lang)} → {m.to ? cityName(m.to.cityId, lang) : t(m.type === 'debarras' ? 'common.recycling' : 'common.storage')}
-                  </span>
                 ),
               },
               {

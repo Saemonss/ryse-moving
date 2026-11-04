@@ -25,7 +25,7 @@ export function CommercialHome() {
     <>
       <PageHeader title={t('commercial.title')} subtitle={t('commercial.subtitle')} />
       <FactStrip facts={PIPELINE.map((s) => ({ label: t(`status.${s}`), value: count(s) }))} />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_340px]">
         <Card title={t('commercial.pipelineTitle')} padded={false}>
           <SimpleTable
             rows={rows}
@@ -33,8 +33,8 @@ export function CommercialHome() {
             empty={t('commercial.empty')}
             columns={[
               { key: 'ref', label: t('commercial.colRef'), render: (m) => <span className="whitespace-nowrap text-muted">{m.ref}</span> },
-              { key: 'c', label: t('commercial.colClient'), render: (m) => <span className="font-medium">{customerOf(data, m)?.name}</span> },
-              { key: 'ty', label: t('commercial.colType'), render: (m) => t(`moveType.${m.type}`) },
+              { key: 'c', label: t('commercial.colClient'), render: (m) => <span className="whitespace-nowrap font-medium">{customerOf(data, m)?.name}</span> },
+              { key: 'ty', label: t('commercial.colType'), render: (m) => <span className="whitespace-nowrap">{t(`moveType.${m.type}`)}</span> },
               { key: 'd', label: t('commercial.colDate'), render: (m) => <span className="whitespace-nowrap">{fmtDate(m.date, lang, 'dayMonth')}</span> },
               { key: 's', label: t('commercial.colStatus'), render: (m) => <StatusBadge tone={STATUS_TONE[m.status]}>{t(`status.${m.status}`)}</StatusBadge> },
               {

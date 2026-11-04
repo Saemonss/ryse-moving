@@ -69,10 +69,13 @@ for (const lang of ['fr', 'nl'] as const) {
   })
 }
 
-test('Barre du haut en néerlandais sur un écran de 1280 px : rien ne déborde', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 })
-  await openFresh(page, 'gerant', 'nl')
-  const header = page.locator('header').first()
-  const over = await header.evaluate((h) => h.scrollWidth > h.clientWidth)
-  expect(over).toBe(false)
-})
+for (const view of ['gerant', 'planificateur', 'commercial', 'comptabilite']) {
+  test(`Néerlandais sur un écran de 1280 px (${view}) : rien ne déborde`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await openFresh(page, view, 'nl')
+    const overflowing = await page.evaluate(() =>
+      [...document.querySelectorAll('header, main *')].filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflowX !== 'visible').length,
+    )
+    expect(overflowing).toBe(0)
+  })
+}

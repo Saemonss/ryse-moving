@@ -116,7 +116,6 @@ export const fr = {
     noMovesToday: "Aucun déménagement prévu aujourd'hui.",
     colTime: 'Heure',
     colClient: 'Client',
-    colRoute: 'Trajet',
     colTeam: 'Équipe',
     colVehicle: 'Camion',
     colStatus: 'État',
