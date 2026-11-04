@@ -9,6 +9,7 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import { createSeed } from '../data/seed'
 import { fixAlert } from '../data/scenarios'
 import { applyFix } from '../data/conflicts'
+import { assignMoveData } from '../data/planning'
 import { todayISO } from '../data/dates'
 import type { Absence, Alert, DemoData, ISODate, PlanConflict, Settings } from '../data/types'
 
@@ -95,27 +96,7 @@ export const useDemo = create<DemoState>()(
         }))
       },
       resolveAlert: (alert) => set((s) => ({ data: fixAlert(s.data, alert, s.seedDay) })),
-      assignMove: (moveId, plan) =>
-        set((s) => {
-          const team = s.data.teams.find((t) => t.id === plan.crewId)
-          return {
-            data: {
-              ...s.data,
-              moves: s.data.moves.map((m) =>
-                m.id !== moveId
-                  ? m
-                  : {
-                      ...m,
-                      date: plan.date,
-                      crewId: plan.crewId,
-                      status: m.status === 'enCours' ? m.status : 'planifie',
-                      teamIds: team ? [...team.memberIds] : m.teamIds,
-                      vehicleIds: [plan.vehicleId, ...(m.liftUsed ? ['v-7'] : [])],
-                    },
-              ),
-            },
-          }
-        }),
+      assignMove: (moveId, plan) => set((s) => ({ data: assignMoveData(s.data, moveId, plan) })),
       addAbsence: (absence) =>
         set((s) => {
           const id = `ab-${s.data.absences.length + 1}-${absence.staffId}-${absence.from}`

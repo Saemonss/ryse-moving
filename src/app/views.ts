@@ -50,10 +50,9 @@ export const VIEWS: ViewDef[] = [
   {
     id: 'planificateur', key: '2', layout: 'desktop', icon: CalendarRange, user: { kind: 'staff', id: 's-thomas' },
     screens: [
-      home,
-      { id: 'planning', icon: CalendarDays, label: 'menu.planning', menu: true, ready: false },
-      { id: 'absences', icon: CalendarOff, label: 'menu.absences', menu: true, ready: false },
-      { id: 'a-planifier', icon: ClipboardList, label: 'menu.aPlanifier', menu: true, ready: false },
+      { id: 'planning', icon: CalendarDays, label: 'menu.planning', menu: true, ready: true },
+      { id: 'absences', icon: CalendarOff, label: 'menu.absences', menu: true, ready: true },
+      { id: 'a-planifier', icon: ClipboardList, label: 'menu.aPlanifier', menu: true, ready: true },
     ],
   },
   { id: 'chauffeur', key: '3', layout: 'phone', icon: Truck, user: { kind: 'staff', id: 's-karim' }, screens: [home] },

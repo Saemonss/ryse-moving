@@ -13,7 +13,9 @@ import { GerantHome } from '../views/gerant/GerantHome'
 import { MovesList } from '../views/gerant/MovesList'
 import { MoveFile } from '../views/gerant/MoveFile'
 import { GerantPlanning } from '../views/gerant/PlanningScreen'
-import { PlanificateurHome } from '../views/planificateur/PlanificateurHome'
+import { PlanificateurPlanning } from '../views/planificateur/PlanningScreen'
+import { AbsencesScreen } from '../views/planificateur/AbsencesScreen'
+import { ToPlanScreen } from '../views/planificateur/ToPlanScreen'
 import { ChauffeurHome } from '../views/chauffeur/ChauffeurHome'
 import { CommercialHome } from '../views/commercial/CommercialHome'
 import { ClientHome } from '../views/client/ClientHome'
@@ -31,7 +33,7 @@ type Screen = (props: { param?: string }) => React.JSX.Element
 /** Composant de chaque écran : SCREENS[vue][ecran]. Les écrans pas encore prêts n'y figurent pas. */
 const SCREENS: Record<ViewId, Record<string, Screen>> = {
   gerant: { accueil: GerantHome, demenagements: MovesList, dossier: MoveFile, planning: GerantPlanning },
-  planificateur: { accueil: PlanificateurHome },
+  planificateur: { planning: PlanificateurPlanning, absences: AbsencesScreen, 'a-planifier': ToPlanScreen },
   chauffeur: { accueil: ChauffeurHome },
   commercial: { accueil: CommercialHome },
   client: { accueil: ClientHome },
@@ -78,7 +80,7 @@ function ViewLayout({ route }: { route: Route & { view: ViewId } }) {
   const { t } = useI18n()
   const { view, screen, param } = route
   const user = useViewUser(view)
-  const Screen = SCREENS[view][screen] ?? SCREENS[view].accueil!
+  const Screen = SCREENS[view][screen] ?? Object.values(SCREENS[view])[0]!
   const phone = viewDef(view).layout === 'phone'
 
   if (phone)

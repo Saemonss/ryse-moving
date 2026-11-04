@@ -25,7 +25,14 @@ async function targets(page: Page): Promise<Locator[]> {
   const root = await scope(page)
   const all = await root.locator(CLICKABLE).all()
   const visible: Locator[] = []
-  for (const el of all) if (await el.isVisible()) visible.push(el)
+  // Listes répétitives (lignes de tableau, blocs du planning) : on teste les 3 premiers éléments seulement.
+  let sampled = 0
+  for (const el of all) {
+    if (!(await el.isVisible())) continue
+    const repeated = await el.evaluate((e) => !!e.closest('[data-crawl-sample]'))
+    if (repeated && ++sampled > 3) continue
+    visible.push(el)
+  }
   return visible
 }
 
@@ -43,7 +50,7 @@ async function signature(page: Page) {
       lang: document.documentElement.lang,
       // Un champ <input> doit produire un effet ailleurs (ex. résultats filtrés) : sa propre valeur ne compte pas.
       // Une zone de texte libre (<textarea>, ex. brouillon de relance) est acceptée si elle se remplit.
-      values: [...document.querySelectorAll('textarea')].map((e) => (e as HTMLTextAreaElement).value).join('|'),
+      values: [...document.querySelectorAll('textarea, select')].map((e) => (e as HTMLTextAreaElement).value).join('|'),
     })
   })
 }
@@ -71,7 +78,14 @@ async function isMarkedActive(el: Locator) {
 async function act(el: Locator) {
   const tag = await el.evaluate((e) => e.tagName.toLowerCase())
   if (tag === 'input' || tag === 'textarea') await el.fill(`${(await el.inputValue()) || ''}Ka`)
-  else await el.click()
+  else if (tag === 'select') {
+    // Choisir une autre option que celle en cours
+    const next = await el.evaluate((s) => {
+      const sel = s as HTMLSelectElement
+      return sel.options[(sel.selectedIndex + 1) % sel.options.length]?.value ?? ''
+    })
+    await el.selectOption(next)
+  } else await el.click()
 }
 
 /** Rejoue un chemin de clics depuis une page neuve ; renvoie l'élément final. */

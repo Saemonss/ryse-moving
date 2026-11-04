@@ -74,7 +74,11 @@ for (const view of ['gerant', 'planificateur', 'commercial', 'comptabilite']) {
     await page.setViewportSize({ width: 1280, height: 800 })
     await openFresh(page, view, 'nl')
     const overflowing = await page.evaluate(() =>
-      [...document.querySelectorAll('header, main *')].filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflowX !== 'visible').length,
+      // Texte volontairement tronqué par « … » : accepté (le texte complet est dans l'infobulle)
+      [...document.querySelectorAll('header, main *')].filter((e) => {
+        const st = getComputedStyle(e)
+        return e.scrollWidth > e.clientWidth + 1 && st.overflowX !== 'visible' && st.textOverflow !== 'ellipsis'
+      }).length,
     )
     expect(overflowing).toBe(0)
   })

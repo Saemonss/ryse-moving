@@ -71,7 +71,12 @@ export function Planning({ editable = false, onOpenMove, onDrop, toolbar }: Plan
         />
         <div className="flex items-center gap-1">
           <Button size="sm" variant="secondary" icon={ChevronLeft} aria-label={t(mode === 'week' ? 'planning.prev' : 'planning.prevDay')} onClick={() => (mode === 'week' ? shift(-1) : setDay((d) => addDays(d, -1)))} />
-          <Button size="sm" variant="secondary" onClick={goToday}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={goToday}
+            aria-pressed={mode === 'week' ? monday === startOfWeek(today) : day === today}
+          >
             {t('planning.today')}
           </Button>
           <Button size="sm" variant="secondary" icon={ChevronRight} aria-label={t(mode === 'week' ? 'planning.next' : 'planning.nextDay')} onClick={() => (mode === 'week' ? shift(1) : setDay((d) => addDays(d, 1)))} />
@@ -86,7 +91,7 @@ export function Planning({ editable = false, onOpenMove, onDrop, toolbar }: Plan
 
       {mode === 'week' ? (
         <div className="overflow-x-auto rounded-2xl border border-line/80 bg-white shadow-card">
-          <div className="grid min-w-[980px]" style={{ gridTemplateColumns: '176px repeat(7, minmax(0, 1fr))' }}>
+          <div className="grid min-w-[900px]" style={{ gridTemplateColumns: '156px repeat(7, minmax(0, 1fr))' }}>
             <div className="sticky left-0 border-b border-line bg-white" />
             {days.map((d) => (
               <button
