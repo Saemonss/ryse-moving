@@ -3,6 +3,7 @@
  * fenêtre « Affecter » pour prévisualiser les conflits avant de valider.
  */
 import { isAbsent } from './selectors'
+import { distanceKm, plannedHoursFor } from './geo'
 import type { DemoData, ISODate } from './types'
 
 export interface AssignPlan {
@@ -10,6 +11,9 @@ export interface AssignPlan {
   crewId: string
   vehicleId: string
 }
+
+const kmFor = (m: DemoData['moves'][number], agencyId?: string) =>
+  distanceKm(agencyId === 'a-lille' ? 'lille' : 'nivelles', m.from.cityId, m.to?.cityId)
 
 /** Statuts qu'on peut encore planifier ou déplacer (jamais un dossier en cours ou réalisé). */
 export const PLANNABLE = ['devisSigne', 'planifie']
@@ -28,6 +32,9 @@ export function assignMoveData(data: DemoData, moveId: string, plan: AssignPlan)
             date: plan.date,
             crewId: plan.crewId,
             status: 'planifie',
+            // Distance et durée recalculées depuis le dépôt de l'équipe (Nivelles ou Lille) → coût et marge à jour
+            distanceKm: kmFor(m, team?.agencyId),
+            plannedHours: plannedHoursFor(m.volumeM3, kmFor(m, team?.agencyId)),
             teamIds: team ? [...team.memberIds] : m.teamIds,
             vehicleIds: [plan.vehicleId, ...(m.liftUsed ? ['v-7'] : [])],
           },

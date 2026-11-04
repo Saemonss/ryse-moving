@@ -2,7 +2,8 @@
  * Phrases d'un conflit de planning (titre, explication, solution), partagées par le gérant et le planificateur.
  */
 import type { Lang, TKey } from '../../i18n'
-import { fmtDate } from '../../i18n/format'
+import { fmtDate, fmtMoney } from '../../i18n/format'
+import { LIFT_RENTAL_CENTS } from '../../data/conflicts'
 import { byId, fullName } from '../../data/selectors'
 import type { DemoData, PlanConflict } from '../../data/types'
 
@@ -46,7 +47,11 @@ export function conflictTexts(c: PlanConflict, data: DemoData, t: T, lang: Lang)
   const fix = c.fix
   const fixText = !fix
     ? t('conflicts.fix.none')
-    : fix.type === 'vehicle'
+    : fix.type === 'postpone'
+      ? t('conflicts.fix.postpone', { date: fmtDate(fix.to, lang, 'weekday') })
+      : fix.type === 'rentLift'
+        ? t('conflicts.fix.rentLift', { amount: fmtMoney(LIFT_RENTAL_CENTS, lang, false) })
+        : fix.type === 'vehicle'
       ? t('conflicts.fix.vehicle', { vehicle: vehicleLabel(fix.to) })
       : fix.from
         ? t('conflicts.fix.replace', { from: person(fix.from), to: person(fix.to) })

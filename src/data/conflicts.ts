@@ -4,6 +4,7 @@
  * volume supérieur à la capacité des camions, contrôle technique dépassé.
  * Chaque conflit propose si possible UNE solution en un clic (autre camion libre, remplaçant disponible).
  */
+import { addDays, fromISO } from './dates'
 import { isAbsent } from './selectors'
 import type { ConflictFix, DemoData, ISODate, Move, PlanConflict, Skill, Staff, Vehicle } from './types'
 
@@ -21,7 +22,7 @@ const vehicle = (data: DemoData, id: string) => data.vehicles.find((v) => v.id =
 export function requiredSkills(move: Move, data: DemoData): Skill[] {
   const skills: Skill[] = []
   if (move.type === 'international') skills.push('international')
-  if (move.liftUsed || move.options.includes('monteMeubles')) skills.push('monteMeubles')
+  if ((move.liftUsed || move.options.includes('monteMeubles')) && !move.liftRented) skills.push('monteMeubles')
   if (move.vehicleIds.some((id) => NEEDS_PERMIS_C.includes(vehicle(data, id)?.kind ?? ''))) skills.push('permisC')
   return skills
 }
@@ -66,7 +67,44 @@ function vehicleFix(data: DemoData, move: Move, vehicleId: string): ConflictFix 
   return other ? { type: 'vehicle', from: vehicleId, to: other.id } : undefined
 }
 
+/** Prix de location d'un monte-meubles avec son opérateur, pour une journée. */
+export const LIFT_RENTAL_CENTS = 18_000
+const POSTPONE_MAX_DAYS = 14
+
+const concerning = (list: PlanConflict[], moveId: string) => list.filter((c) => c.moveId === moveId || c.otherMoveId === moveId)
+
+/**
+ * Conflits du planning, chacun avec une solution SÛRE (qui ne crée aucun nouveau conflit sur le dossier).
+ * Si la solution directe n'est pas sûre ou n'existe pas : location d'un monte-meubles, ou décalage au premier
+ * jour libre. Il ne reste « sans solution » que des cas extrêmes (aucun jour libre sur 14 jours).
+ */
 export function detectConflicts(data: DemoData): PlanConflict[] {
+  const raw = rawConflicts(data)
+  return raw.map((c) => ({ ...c, fix: safeFix(data, c, raw) }))
+}
+
+function isSafe(data: DemoData, c: PlanConflict, raw: PlanConflict[], fix: ConflictFix): boolean {
+  const before = concerning(raw, c.moveId)
+  const beforeIds = new Set(before.map((x) => x.id))
+  const after = concerning(rawConflicts(applyFix(data, { ...c, fix })), c.moveId)
+  return after.length < before.length && after.every((x) => beforeIds.has(x.id))
+}
+
+function safeFix(data: DemoData, c: PlanConflict, raw: PlanConflict[]): ConflictFix | undefined {
+  if (c.fix && isSafe(data, c, raw, c.fix)) return c.fix
+  if (c.kind === 'vehicleDouble' && vehicle(data, c.vehicleId ?? '')?.kind === 'monteMeubles') return { type: 'rentLift' }
+  const move = data.moves.find((m) => m.id === c.moveId)
+  if (!move || move.status !== 'planifie') return undefined
+  for (let d = 1; d <= POSTPONE_MAX_DAYS; d++) {
+    const to = addDays(move.date, d)
+    if (fromISO(to).getDay() === 0) continue
+    const fix: ConflictFix = { type: 'postpone', to }
+    if (concerning(rawConflicts(applyFix(data, { ...c, fix })), move.id).length === 0) return fix
+  }
+  return undefined
+}
+
+function rawConflicts(data: DemoData): PlanConflict[] {
   const out: PlanConflict[] = []
   const moves = data.moves.filter((m) => ACTIVE.includes(m.status)).sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
   const firstVehicleUse = new Map<string, string>()
@@ -127,6 +165,14 @@ export function applyFix(data: DemoData, conflict: PlanConflict): DemoData {
     moves: data.moves.map((m) => {
       if (m.id !== conflict.moveId) return m
       if (fix.type === 'vehicle') return { ...m, vehicleIds: m.vehicleIds.map((v) => (v === fix.from ? fix.to : v)) }
+      if (fix.type === 'postpone') return { ...m, date: fix.to }
+      if (fix.type === 'rentLift')
+        return {
+          ...m,
+          liftRented: true,
+          vehicleIds: m.vehicleIds.filter((v) => vehicle(data, v)?.kind !== 'monteMeubles'),
+          extraCosts: [...(m.extraCosts ?? []), { kind: 'liftRental' as const, cents: LIFT_RENTAL_CENTS }],
+        }
       const teamIds = fix.from ? m.teamIds.map((s) => (s === fix.from ? fix.to : s)) : [...m.teamIds, fix.to]
       return { ...m, teamIds }
     }),

@@ -167,6 +167,7 @@ export function MoveFile({ param }: { param?: string }) {
             <Line label={t('file.labour', { hours: fmtNumber(cost.hours, lang, 1), people: cost.crewSize })} value={`− ${money(cost.labour)}`} />
             <Line label={t('file.transport', { km: fmtNumber(move.distanceKm, lang) })} value={`− ${money(cost.transport)}`} />
             {cost.lift > 0 && <Line label={t('file.lift')} value={`− ${money(cost.lift)}`} />}
+            {cost.extra > 0 && <Line label={t('file.liftRental')} value={`− ${money(cost.extra)}`} />}
             <Line label={t('file.material')} value={`− ${money(cost.material)}`} />
             <Line label={t('file.totalCost')} value={money(cost.total)} muted />
             <div className="my-3 border-t border-line" />

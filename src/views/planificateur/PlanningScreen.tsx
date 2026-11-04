@@ -8,6 +8,8 @@ import { useI18n } from '../../i18n'
 import { fmtDate, fmtTime } from '../../i18n/format'
 import { useDemo } from '../../store/demoStore'
 import { detectConflicts } from '../../data/conflicts'
+import { CONFLICT_HORIZON_DAYS } from '../../data/scenarios'
+import { addDays } from '../../data/dates'
 import { byId, cityName, customerOf } from '../../data/selectors'
 import type { ISODate, PlanConflict } from '../../data/types'
 import { Card } from '../../ui/Card'
@@ -34,7 +36,8 @@ export function PlanificateurPlanning() {
   const openMove = (id: string) => (PLANNABLE.includes(byId(data.moves, id)?.status ?? '') ? setAssigning(id) : setViewing(id))
 
   const toPlan = data.moves.filter((m) => m.status === 'devisSigne').sort((a, b) => a.date.localeCompare(b.date))
-  const conflicts = useMemo(() => detectConflicts(data).filter((c) => c.date >= today), [data, today])
+  // Même période que les alertes du gérant : aujourd'hui → 14 jours (les compteurs sont identiques)
+  const conflicts = useMemo(() => detectConflicts(data).filter((c) => c.date >= today && c.date <= addDays(today, CONFLICT_HORIZON_DAYS)), [data, today])
 
   const onDrop = (moveId: string, crewId: string, date: ISODate) => {
     const move = byId(data.moves, moveId)
@@ -85,7 +88,7 @@ export function PlanificateurPlanning() {
         </Card>
       )}
 
-      {conflicts.length > 0 && <ConflictPanel conflicts={conflicts} />}
+      {conflicts.length > 0 && <ConflictPanel conflicts={conflicts} onOtherDay={setAssigning} />}
 
       <Planning
         editable
@@ -112,7 +115,7 @@ export function PlanificateurPlanning() {
   )
 }
 
-function ConflictPanel({ conflicts }: { conflicts: PlanConflict[] }) {
+function ConflictPanel({ conflicts, onOtherDay }: { conflicts: PlanConflict[]; onOtherDay: (moveId: string) => void }) {
   const { t, lang } = useI18n()
   const data = useDemo((s) => s.data)
   const resolveConflict = useDemo((s) => s.resolveConflict)
@@ -132,6 +135,11 @@ function ConflictPanel({ conflicts }: { conflicts: PlanConflict[] }) {
                 <p className="text-sm text-ink/80">{txt.text}</p>
                 <p className="text-sm text-muted">{txt.fix}</p>
               </div>
+              {byId(data.moves, c.moveId)?.status === 'planifie' && (
+                <Button size="sm" variant="ghost" onClick={() => onOtherDay(c.moveId)}>
+                  {t('conflicts.otherDay')}
+                </Button>
+              )}
               {c.fix && (
                 <Button
                   size="sm"

@@ -130,6 +130,10 @@ export interface Move {
   distanceKm: number
   /** Monte-meubles utilisé (facturé seulement si l'option 'monteMeubles' figure au devis). */
   liftUsed?: boolean
+  /** Monte-meubles loué (notre monte-meubles était déjà pris ce jour-là). */
+  liftRented?: boolean
+  /** Coûts supplémentaires (en centimes), ex. location d'un monte-meubles. */
+  extraCosts?: { kind: 'liftRental'; cents: number }[]
   requestedOn: ISODate
   visitOn?: ISODate
   quoteSentOn?: ISODate
@@ -197,6 +201,10 @@ export type ConflictKind = 'vehicleDouble' | 'personDouble' | 'personAbsent' | '
 export type ConflictFix =
   | { type: 'vehicle'; from: string; to: string }
   | { type: 'staff'; from?: string; to: string }
+  /** Décaler le dossier au premier jour sans conflit. */
+  | { type: 'postpone'; to: ISODate }
+  /** Louer un monte-meubles pour ce chantier (coût ajouté au dossier). */
+  | { type: 'rentLift' }
 
 export interface PlanConflict {
   id: string

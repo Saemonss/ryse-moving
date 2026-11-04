@@ -30,6 +30,7 @@ export default class CheckReporter implements Reporter {
       'journey.spec.ts': 'Parcours complet + réinitialisation',
       'robustness.spec.ts': 'Robustesse et raccourcis',
       'planning.spec.ts': 'Planning : situations risquées',
+      'logic.spec.ts': 'Logique métier (sans navigateur)',
     }
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log(' RySe Moving · rapport de vérification')

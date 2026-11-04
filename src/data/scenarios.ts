@@ -11,7 +11,7 @@ import type { Alert, DemoData, ISODate } from './types'
 const QUOTE_SILENCE_DAYS = 5
 /** Alerte entretien / contrôle technique : 30 jours avant l'échéance. */
 export const VEHICLE_WARNING_DAYS = 30
-const CONFLICT_HORIZON_DAYS = 14
+export const CONFLICT_HORIZON_DAYS = 14
 const LOW_MARGIN_LOOKBACK_DAYS = 30
 
 /** Dossiers terminés récemment dont la marge est sous le seuil. */

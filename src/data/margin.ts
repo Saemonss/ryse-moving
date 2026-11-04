@@ -24,6 +24,8 @@ export interface CostBreakdown {
   transport: number
   lift: number
   material: number
+  /** Coûts supplémentaires (location de monte-meubles…). */
+  extra: number
   total: number
   hours: number
   crewSize: number
@@ -48,10 +50,11 @@ export function moveCost(move: Move, data: DemoData): CostBreakdown {
     (sum, v) => sum + move.distanceKm * (s.kmCostCents[v.kind] + (CONSUMPTION_L100[v.kind] * s.fuelCentsPerLitre) / 100),
     0,
   )
-  const lift = move.liftUsed ? LIFT_SETUP_CENTS : 0
+  const lift = move.liftUsed && !move.liftRented ? LIFT_SETUP_CENTS : 0
+  const extra = (move.extraCosts ?? []).reduce((s, c) => s + c.cents, 0)
   const material = MATERIAL_BASE_CENTS + (move.options.includes('emballage') ? move.volumeM3 * PACKING_PER_M3_CENTS : 0)
-  const total = Math.round(labour + transport + lift + material)
-  return { labour: Math.round(labour), transport: Math.round(transport), lift, material, total, hours, crewSize }
+  const total = Math.round(labour + transport + lift + material + extra)
+  return { labour: Math.round(labour), transport: Math.round(transport), lift, material, extra, total, hours, crewSize }
 }
 
 export function moveMargin(move: Move, data: DemoData): { cents: number; rate: number } {

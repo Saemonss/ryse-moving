@@ -88,3 +88,14 @@ test('Un dossier déjà réalisé ne peut pas être replanifié depuis le planni
   await dialog.getByRole('button', { name: 'Fermer' }).first().click()
   expect(await page.evaluate(() => localStorage.getItem('ryse-moving-demo'))).toBe(before)
 })
+
+test('Le gérant et le planificateur comptent les mêmes conflits', async ({ page }) => {
+  await openFresh(page, 'planificateur/absences', 'fr')
+  await page.getByLabel('Personne').selectOption({ label: 'Didier Wauters' })
+  await page.getByLabel('Durée').selectOption('3')
+  await page.getByRole('button', { name: 'Ajouter' }).click()
+  await page.goto('/#/planificateur')
+  const n = Number((await page.getByText(/Conflits à résoudre : \d+/).innerText()).match(/\d+/)?.[0])
+  await page.goto('/#/gerant')
+  await expect(page.locator('main section').filter({ hasText: 'Alertes' }).getByRole('button', { name: 'Résoudre' })).toHaveCount(n)
+})
