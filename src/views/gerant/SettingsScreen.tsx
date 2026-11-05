@@ -17,6 +17,7 @@ import { toast } from '../../ui/Toast'
 import { PageHeader } from '../shared/Page'
 
 const KINDS: VehicleKind[] = ['camion20', 'camion40', 'porteurHayon', 'utilitaire', 'monteMeubles']
+const PRICING_KEYS = ['perM3Cents', 'travelFlatCents', 'perKmCents', 'stairsPerFloorCents', 'packingPerM3Cents', 'liftCents', 'storagePerMonthCents', 'clearanceCents', 'pianoCents', 'depositPct'] as const
 
 export function SettingsScreen() {
   const { t, lang } = useI18n()
@@ -53,6 +54,23 @@ export function SettingsScreen() {
           {t('settings.restore')}
         </Button>
       </div>
+
+      <Card title={t('pricing.title')} className="mb-6">
+        <p className="mb-4 text-[15px] text-muted">{t('pricing.intro')}</p>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {PRICING_KEYS.map((k) => (
+            <NumberField
+              key={k}
+              label={t(`pricing.${k.replace('Cents', '') as 'perM3'}`)}
+              unit={k === 'depositPct' ? '%' : t('pricing.euro')}
+              cents={s.pricing[k]}
+              bounds={k === 'depositPct' ? [0, 100] : [0, 1_000_000]}
+              integer={k === 'depositPct'}
+              onCommit={(v) => updateSettings({ pricing: { ...s.pricing, [k]: v } })}
+            />
+          ))}
+        </div>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={t('settings.labourTitle')}>

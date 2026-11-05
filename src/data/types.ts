@@ -151,7 +151,22 @@ export interface Team {
 }
 
 /** Paramètres de calcul de la marge (modifiables par le gérant). Montants en centimes. */
+/** Grille tarifaire (prix de vente) utilisée par l'agent pour préparer les devis. Montants en centimes. */
+export interface Pricing {
+  perM3Cents: number
+  travelFlatCents: number
+  perKmCents: number
+  stairsPerFloorCents: number
+  packingPerM3Cents: number
+  liftCents: number
+  storagePerMonthCents: number
+  clearanceCents: number
+  pianoCents: number
+  depositPct: number
+}
+
 export interface Settings {
+  pricing: Pricing
   hourlyCostCents: number
   kmCostCents: Record<VehicleKind, number>
   fuelCentsPerLitre: number
@@ -168,6 +183,8 @@ export interface DemoData {
   days: DriverDay[]
   /** Dossiers litige ouverts suite à un dégât. */
   claims: Claim[]
+  /** Demandes entrantes (tous canaux) et leur traitement par l'agent d'accueil. */
+  leads: Lead[]
   staff: Staff[]
   absences: Absence[]
   vehicles: Vehicle[]
@@ -175,7 +192,7 @@ export interface DemoData {
   moves: Move[]
 }
 
-export type AlertKind = 'conflict' | 'quote' | 'damage' | 'invoice' | 'inspection' | 'lowMargin'
+export type AlertKind = 'conflict' | 'quote' | 'damage' | 'invoice' | 'inspection' | 'lowMargin' | 'callback' | 'quoteReady'
 
 // ─── Terrain : journée du chauffeur ───────────────────────────────────────────────────────────
 
@@ -269,6 +286,8 @@ export interface Alert {
   conflict?: PlanConflict
   /** Journée chauffeur concernée (kind 'damage'). */
   dayId?: string
+  /** Demande concernée (kind 'callback'). */
+  leadId?: string
 }
 
 export type ConflictKind = 'vehicleDouble' | 'personDouble' | 'personAbsent' | 'skillMissing' | 'overCapacity' | 'inspectionOverdue'
@@ -292,4 +311,80 @@ export interface PlanConflict {
   otherMoveId?: string
   skill?: Skill
   fix?: ConflictFix
+}
+
+// ─── Demandes entrantes et agent d'accueil ────────────────────────────────────────────────────
+
+export type LeadChannel = 'site' | 'appel' | 'vocal' | 'mail' | 'whatsapp' | 'sms' | 'plateforme'
+/** Informations qu'il faut pour préparer un devis. */
+export type LeadField = 'fromCity' | 'fromFloor' | 'fromElevator' | 'toCity' | 'toFloor' | 'toElevator' | 'date' | 'volume'
+
+/** Ce que le client a dit (ou que l'agent a compris). Absent = pas encore connu. */
+export interface LeadFacts {
+  fromCity?: string
+  fromFloor?: number
+  fromElevator?: boolean
+  toCity?: string
+  toFloor?: number
+  toElevator?: boolean
+  date?: ISODate
+  volume?: number
+  special?: 'piano' | 'coffre'
+}
+
+export type LeadStatus = 'nouvelle' | 'attenteClient' | 'rappel' | 'complete' | 'atypique'
+
+export interface InventoryLine {
+  id: string
+  room: RoomKey
+  item: string
+  qty: number
+  m3: number
+}
+
+export interface QuoteLine {
+  id: string
+  kind: 'volume' | 'deplacement' | 'km' | 'etages' | 'emballage' | 'monteMeubles' | 'gardeMeuble' | 'debarras' | 'special' | 'libre'
+  qty: number
+  unitCents: number
+  /** Raison donnée par l'agent pour une option proposée. */
+  reason?: 'stairs' | 'fragile' | 'storage' | 'special'
+}
+
+export interface Quote {
+  lines: QuoteLine[]
+  depositPct: number
+  preparedAt: string
+  sentAt?: string
+  signedAt?: string
+  signature?: { name: string; image: string }
+}
+
+export interface Lead {
+  id: string
+  channel: LeadChannel
+  lang: 'fr' | 'nl'
+  name: string
+  phone: string
+  receivedAt: string
+  /** Qui a saisi la demande : le client lui-même, ou le gérant (appel / SMS reçu directement). */
+  origin: 'client' | 'gerant'
+  /** Texte libre saisi par le gérant (notes d'appel, SMS collé). */
+  notes?: string
+  /** Ce que dit le message d'origine. */
+  facts: LeadFacts
+  /** Compléments apportés ensuite (réponse du client, rappel du gérant). */
+  added: LeadFacts
+  status: LeadStatus
+  moveId?: string
+  replyAt?: string
+  clientReplyAt?: string
+  callback?: { questions: LeadField[]; doneAt?: string }
+  photosRequestedAt?: string
+  photosAt?: string
+  photos?: string[]
+  inventory?: InventoryLine[]
+  confidence?: 'haute' | 'moyenne' | 'faible'
+  volumeValidatedAt?: string
+  quote?: Quote
 }

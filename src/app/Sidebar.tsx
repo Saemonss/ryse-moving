@@ -10,7 +10,7 @@ import { readyScreens, type ViewId } from './views'
 import { go, hrefOf } from './router'
 
 /** La fiche dossier dépend de l'entrée « Déménagements » du menu. */
-const PARENT: Record<string, string> = { dossier: 'demenagements', journee: 'accueil', litige: 'accueil' }
+const PARENT: Record<string, string> = { dossier: 'demenagements', journee: 'accueil', litige: 'accueil', demande: 'demandes' }
 
 export function Sidebar({ view, screen }: { view: ViewId; screen: string }) {
   const { t } = useI18n()

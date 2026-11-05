@@ -29,6 +29,9 @@ const useToasts = create<ToastState>()((set) => ({
   remove: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
 }))
 
+/** Ferme les messages en cours (ex. en passant au téléphone du client). */
+export const clearToasts = () => useToasts.setState({ items: [] })
+
 export function toast(message: string, tone: ToastItem['tone'] = 'success') {
   useToasts.getState().push(message, tone)
 }

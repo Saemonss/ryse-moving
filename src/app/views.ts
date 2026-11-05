@@ -5,7 +5,7 @@
  *   ready: false = pas encore développé → jamais affiché (ni menu, ni lien).
  */
 import {
-  CalendarDays, CalendarOff, CalendarRange, ChartColumn, ClipboardList, FileText, Handshake, House, LayoutDashboard, Receipt,
+  CalendarDays, CalendarOff, Inbox, CalendarRange, ChartColumn, ClipboardList, FileText, Handshake, House, LayoutDashboard, Receipt,
   Settings2, Smartphone, Truck, Users, type LucideIcon,
 } from 'lucide-react'
 import { CLIENT_CUSTOMER_ID } from '../data/seed'
@@ -47,6 +47,7 @@ export const VIEWS: ViewDef[] = [
       { id: 'parametres', icon: Settings2, label: 'menu.parametres', menu: true, ready: true },
       { id: 'journee', icon: ClipboardList, label: 'review.blockTitle', menu: false, ready: true },
       { id: 'litige', icon: FileText, label: 'menu.dossier', menu: false, ready: true },
+      { id: 'demande', icon: Inbox, label: 'inbox.title', menu: false, ready: true },
     ],
   },
   {
@@ -58,7 +59,14 @@ export const VIEWS: ViewDef[] = [
     ],
   },
   { id: 'chauffeur', key: '3', layout: 'phone', icon: Truck, user: { kind: 'staff', id: 's-karim' }, screens: [home] },
-  { id: 'commercial', key: '4', layout: 'desktop', icon: Handshake, user: { kind: 'staff', id: 's-julie' }, screens: [home] },
+  {
+    id: 'commercial', key: '4', layout: 'desktop', icon: Handshake, user: { kind: 'staff', id: 's-julie' },
+    screens: [
+      { id: 'demandes', icon: Inbox, label: 'inbox.title', menu: true, ready: true },
+      { id: 'devis', icon: FileText, label: 'quote.listTitle', menu: true, ready: true },
+      { id: 'demande', icon: Inbox, label: 'inbox.title', menu: false, ready: true },
+    ],
+  },
   { id: 'client', key: '5', layout: 'phone', icon: Smartphone, user: { kind: 'customer', id: CLIENT_CUSTOMER_ID }, screens: [home] },
   { id: 'comptabilite', key: '6', layout: 'desktop', icon: Receipt, user: { kind: 'staff', id: 's-marc' }, screens: [home] },
 ]

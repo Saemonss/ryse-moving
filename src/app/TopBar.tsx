@@ -3,7 +3,7 @@
  * Sur les vues téléphone (pas de barre latérale), le logo s'affiche ici.
  */
 import { useEffect, useRef, useState } from 'react'
-import { FlaskConical, RotateCcw, Settings, SkipForward, Wifi, WifiOff } from 'lucide-react'
+import { FlaskConical, MessageSquarePlus, RotateCcw, Settings, SkipForward, Wifi, WifiOff } from 'lucide-react'
 import { useDemo } from '../store/demoStore'
 import { toast } from '../ui/Toast'
 import { useI18n, type Lang } from '../i18n'
@@ -148,6 +148,7 @@ function PresenterMenu() {
         >
           <p className="px-3 pb-1 pt-2 text-[13px] font-medium text-muted">{t('shell.presenterMenu')}</p>
           <button
+            data-presenter="reset"
             type="button"
             onClick={() => {
               setOpen(false)
@@ -159,6 +160,19 @@ function PresenterMenu() {
             {t('shell.reset')}
           </button>
           <button
+            data-presenter="lead"
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              useShell.getState().setNewLeadOpen(true)
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-ink transition-colors hover:bg-surface"
+          >
+            <MessageSquarePlus size={18} aria-hidden="true" className="text-accent" />
+            {t('newLead.menu')}
+          </button>
+          <button
+            data-presenter="network"
             type="button"
             onClick={() => {
               setOpen(false)
@@ -172,6 +186,7 @@ function PresenterMenu() {
             {t(online ? 'presenter.offline' : 'presenter.online')}
           </button>
           <button
+            data-presenter="advance"
             type="button"
             onClick={() => {
               setOpen(false)

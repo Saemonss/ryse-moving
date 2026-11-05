@@ -4,7 +4,7 @@
  * 3. Le chiffre d'affaires et la marge du mois  4. Les actions à faire
  */
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarCheck, ClipboardList, FileSignature, Inbox, Receipt } from 'lucide-react'
+import { Bot, CalendarCheck, ClipboardList, FileSignature, Inbox, Receipt } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { fmtDate, fmtMoney } from '../../i18n/format'
 import { useDemo } from '../../store/demoStore'
@@ -25,6 +25,8 @@ import { go } from '../../app/router'
 import { isScreenReady } from '../../app/views'
 import { alertContent } from './alertContent'
 import { AlertDialog } from './AlertDialog'
+import { AskAgentDialog } from '../commercial/AskAgentDialog'
+import { Button } from '../../ui/Button'
 
 /**
  * Avancement d'un déménagement du jour : d'abord l'étape réelle envoyée par le téléphone du chauffeur ;
@@ -77,11 +79,18 @@ export function GerantHome() {
     { icon: Receipt, label: t('gerant.todoToInvoice', { n: count('termine') }), status: 'termine' },
   ]
 
-  const onAlert = (a: Alert) => (a.kind === 'lowMargin' ? go('gerant', 'rentabilite') : setOpenAlert(a))
+  const onAlert = (a: Alert) =>
+    a.kind === 'lowMargin' ? go('gerant', 'rentabilite') : a.kind === 'callback' || a.kind === 'quoteReady' ? go('gerant', 'demande', a.leadId) : setOpenAlert(a)
+  const [asking, setAsking] = useState(false)
 
   return (
     <>
-      <PageHeader title={t('gerant.hello', { name: user.firstName })} subtitle={fmtDate(today, lang, 'long')} />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeader title={t('gerant.hello', { name: user.firstName })} subtitle={fmtDate(today, lang, 'long')} />
+        <Button icon={Bot} variant="secondary" onClick={() => setAsking(true)}>
+          {t('inbox.askAgent')}
+        </Button>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <Card
@@ -213,6 +222,7 @@ export function GerantHome() {
       </div>
 
       <AlertDialog alert={openAlert} onClose={() => setOpenAlert(null)} />
+      <AskAgentDialog open={asking} onClose={() => setAsking(false)} />
     </>
   )
 }

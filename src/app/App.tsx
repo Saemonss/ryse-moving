@@ -23,11 +23,14 @@ import { PlanificateurPlanning } from '../views/planificateur/PlanningScreen'
 import { AbsencesScreen } from '../views/planificateur/AbsencesScreen'
 import { ToPlanScreen } from '../views/planificateur/ToPlanScreen'
 import { ChauffeurApp } from '../views/chauffeur/ChauffeurApp'
-import { CommercialHome } from '../views/commercial/CommercialHome'
-import { ClientHome } from '../views/client/ClientHome'
+import { Inbox } from '../views/commercial/Inbox'
+import { LeadDetail } from '../views/commercial/LeadDetail'
+import { QuotesList } from '../views/commercial/QuotesList'
+import { ClientApp } from '../views/client/ClientApp'
 import { ComptabiliteHome } from '../views/comptabilite/ComptabiliteHome'
 import { normalizeHash, useRoute, type Route } from './router'
 import { TopBar } from './TopBar'
+import { NewLeadDialog } from './NewLeadDialog'
 import { Sidebar } from './Sidebar'
 import { PhoneFrame } from './PhoneFrame'
 import { useShell, useViewUser } from './shellState'
@@ -49,11 +52,12 @@ const SCREENS: Record<ViewId, Record<string, Screen>> = {
     parametres: SettingsScreen,
     journee: DayReview,
     litige: ClaimScreen,
+    demande: LeadDetail,
   },
   planificateur: { planning: PlanificateurPlanning, absences: AbsencesScreen, 'a-planifier': ToPlanScreen },
   chauffeur: { accueil: ChauffeurApp },
-  commercial: { accueil: CommercialHome },
-  client: { accueil: ClientHome },
+  commercial: { demandes: Inbox, devis: QuotesList, demande: LeadDetail },
+  client: { accueil: ClientApp },
   comptabilite: { accueil: ComptabiliteHome },
 }
 
@@ -88,6 +92,7 @@ export function App() {
         <ViewLayout route={route as Route & { view: ViewId }} />
       )}
       <ResetDialog />
+      <NewLeadDialog />
       {!(route.view !== 'charte' && viewDef(route.view).layout === 'phone') && <Toaster />}
     </>
   )

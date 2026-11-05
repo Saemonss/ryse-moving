@@ -50,6 +50,14 @@ export function alertContent(alert: Alert, data: DemoData, t: T, lang: Lang) {
         text: t('alerts.inspection.text', { vehicle: vehicle ? t(`vehicleKind.${vehicle.kind}`) : '', plate: plateNb(vehicle?.plate) }),
         action: t('alerts.inspection.action'),
       }
+    case 'callback': {
+      const lead = data.leads.find((l) => l.id === alert.leadId)
+      return { title: t('alerts.callback.title', { name: lead?.name ?? '' }), text: t('alerts.callback.text', { n: alert.count ?? 0 }), action: t('alerts.callback.action') }
+    }
+    case 'quoteReady': {
+      const lead = data.leads.find((l) => l.id === alert.leadId)
+      return { title: t('alerts.quoteReady.title', { name: lead?.name ?? '' }), text: t('alerts.quoteReady.text'), action: t('alerts.quoteReady.action') }
+    }
     case 'lowMargin':
       return {
         title: t('alerts.lowMargin.title'),

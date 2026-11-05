@@ -71,7 +71,7 @@ test('Journée de Karim, contrôle du gérant, marge mise à jour, hors ligne, r
   // 3. Même mission, réseau coupé : rien n'arrive au bureau tant que le réseau n'est pas revenu
   await reset(page)
   await page.keyboard.press('3')
-  await presenter(page, 1) // simuler une perte de réseau
+  await presenter(page, 'network') // simuler une perte de réseau
   await toInventory(page)
   await expect(phone(page).getByText('Pas de réseau : tout est gardé sur le téléphone.')).toBeVisible()
   await expect(phone(page).getByText(/À envoyer : [3-9]/)).toBeVisible()
@@ -80,12 +80,12 @@ test('Journée de Karim, contrôle du gérant, marge mise à jour, hors ligne, r
   // Hors ligne : le bureau ne voit encore aucune étape (quelle que soit l'heure du test)
   await expect(karimRow).not.toContainText('Étape')
   await expect(karimRow).toContainText('Planifié')
-  await presenter(page, 1) // rétablir le réseau
+  await presenter(page, 'network') // rétablir le réseau
   await expect(page.getByText(/Réseau revenu : \d+ éléments envoyés au bureau/)).toBeVisible()
   await expect(karimRow).toContainText('Étape 3/7')
 
   // 4. Réseau recoupé puis réinitialisation → état de départ exact, réseau rétabli, file vide
-  await presenter(page, 1)
+  await presenter(page, 'network')
   await reset(page)
   expect(await demoData(page)).toEqual(start)
   const state = await page.evaluate(() => JSON.parse(localStorage.getItem('ryse-moving-demo') ?? '{}').state)

@@ -77,8 +77,8 @@ export async function toDayEnd(page: Page) {
   await pickPhoto(page)
 }
 
-/** Menu présentateur : bouton n (0 = réinitialiser, 1 = réseau, 2 = avancer la mission). */
-export async function presenter(page: Page, n: number) {
+/** Menu présentateur : une entrée par son repère (reset, lead, network, advance). */
+export async function presenter(page: Page, entry: 'reset' | 'lead' | 'network' | 'advance') {
   await page.locator('header button[aria-haspopup]').click()
-  await page.locator('[data-popover] button').nth(n).click()
+  await page.locator(`[data-popover] [data-presenter="${entry}"]`).click()
 }

@@ -18,7 +18,7 @@ const STATES: Record<string, (page: Page) => Promise<void>> = {
   'chauffeur · signature': toSignature,
   'chauffeur · fin de journée': toDayEnd,
   'chauffeur · hors ligne': async (page) => {
-    await presenter(page, 1)
+    await presenter(page, 'network')
     await toMissions(page)
   },
 }

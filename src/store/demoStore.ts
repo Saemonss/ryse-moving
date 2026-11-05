@@ -11,11 +11,15 @@ import { fixAlert } from '../data/scenarios'
 import { applyFix, detectConflicts } from '../data/conflicts'
 import { assignMoveData } from '../data/planning'
 import { todayISO } from '../data/dates'
-import type { Absence, Alert, Claim, DemoData, DriverDay, ISODate, PlanConflict, Settings } from '../data/types'
+import type { Absence, Alert, Claim, DemoData, DriverDay, ISODate, Lead, LeadChannel, LeadFacts, PlanConflict, Settings } from '../data/types'
+import { clientAnswers, leadFacts, missingFields, parseNotes, simulateLead, upsertMoveFromLead } from '../data/leads'
+import { DEMO_CLIENT_PHOTOS, confidenceFor, inventoryFromPhotos, inventoryTotal } from '../data/inventory'
+import { optionsOf, patchLine, prepareQuote, quoteDeposit, quoteTotal } from '../data/quote'
+import { addDays } from '../data/dates'
 import { MISSION_DONE, advanceMissionDemo, applyValidation, dayId, driverMoves, emptyMission, openClaimData, syncOffice } from '../data/field'
 
 export const STORAGE_KEY = 'ryse-moving-demo'
-const SCHEMA_VERSION = 5
+const SCHEMA_VERSION = 7
 
 /** Ce qui attend dans la file du téléphone quand il n'y a pas de réseau. */
 export type QueueLabel = 'dayStart' | 'vehicleCheck' | 'step' | 'photos' | 'damage' | 'signature' | 'expense' | 'pause' | 'dayEnd' | 'daySent'
@@ -48,6 +52,28 @@ interface DemoState {
   correctDay: (dayId: string, field: 'hours' | 'km' | 'expenses', from: number, to: number) => void
   openClaim: (dayId: string, moveId: string) => string
   setClaimStatus: (claimId: string, status: Claim['status']) => void
+  /** Menu présentateur : une nouvelle demande arrive (canal, langue). Renvoie son identifiant. */
+  simulateLead: (channel: LeadChannel, lang: 'fr' | 'nl') => string
+  /** Le gérant confie à l'agent une demande reçue par appel ou SMS (texte libre). Renvoie son identifiant. */
+  askAgent: (input: { channel: LeadChannel; name: string; phone: string; notes: string; lang: 'fr' | 'nl' }) => string
+  /** L'agent traite la demande : dossier créé, réponse au client ou rappel demandé au gérant. */
+  processLead: (id: string) => void
+  /** Démo : le client répond aux questions de l'agent. */
+  clientReply: (id: string) => void
+  /** Le gérant a rappelé le prospect et renvoie ses réponses à l'agent. */
+  completeCallback: (id: string, answers: LeadFacts) => void
+  /** Volume par photos : lien envoyé au client, photos reçues (démo), inventaire corrigé, volume validé. */
+  requestPhotos: (id: string) => void
+  clientSendPhotos: (id: string, mode: 'full' | 'partial') => void
+  setInventoryQty: (id: string, lineId: string, qty: number) => void
+  validateVolume: (id: string) => void
+  proposeVisit: (id: string) => void
+  /** Devis : préparé par l'agent, corrigé par le commercial, envoyé (humain), signé par le client. */
+  prepareQuote: (id: string) => void
+  setQuoteLine: (id: string, lineId: string, patch: { qty?: number; unitCents?: number }) => void
+  /** Renvoie false si le devis était déjà envoyé (double clic) : un seul envoi. */
+  sendQuote: (id: string) => boolean
+  signQuote: (id: string, name: string, image: string) => void
   startDriverDay: (moveId: string) => void
   /** Renvoie false si la situation a changé entre-temps (rien n'est modifié). */
   resolveAlert: (alert: Alert) => boolean
@@ -75,6 +101,9 @@ export const SETTINGS_BOUNDS = {
 function sanitize(s: Settings): Settings {
   const B = SETTINGS_BOUNDS
   return {
+    pricing: Object.fromEntries(
+      Object.entries(s.pricing).map(([k, v]) => [k, k === 'depositPct' ? clamp(v, 0, 100) : clamp(v, 0, 10_000_000)]),
+    ) as unknown as Settings['pricing'],
     hourlyCostCents: clamp(s.hourlyCostCents, ...B.hourlyCostCents),
     fuelCentsPerLitre: clamp(s.fuelCentsPerLitre, ...B.fuelCentsPerLitre),
     marginThresholdPct: clamp(s.marginThresholdPct, ...B.marginThresholdPct),
@@ -196,6 +225,126 @@ export const useDemo = create<DemoState>()(
       },
       setClaimStatus: (claimId, status) =>
         set((s) => ({ data: { ...s.data, claims: s.data.claims.map((c) => (c.id === claimId ? { ...c, status } : c)) } })),
+      simulateLead: (channel, lang) => {
+        const s = get()
+        const n = s.data.leads.filter((l) => l.id.startsWith('lead-sim')).length
+        const lead = simulateLead(channel, lang, n, s.seedDay)
+        set({ data: { ...s.data, leads: [lead, ...s.data.leads] } })
+        return lead.id
+      },
+      askAgent: ({ channel, name, phone, notes, lang }) => {
+        const s = get()
+        const lead: Lead = {
+          id: `lead-g-${Date.now()}`, channel, lang, name: name.trim() || '—', phone, notes, origin: 'gerant',
+          receivedAt: new Date().toISOString(), facts: parseNotes(notes, s.seedDay), added: {}, status: 'nouvelle',
+        }
+        set({ data: { ...s.data, leads: [lead, ...s.data.leads] } })
+        return lead.id
+      },
+      processLead: (id) =>
+        set((s) => {
+          const lead = s.data.leads.find((l) => l.id === id)
+          if (!lead || lead.status !== 'nouvelle') return {}
+          const f = leadFacts(lead)
+          const put = (data: DemoData, l: Lead) => ({ ...data, leads: data.leads.map((x) => (x.id === id ? l : x)) })
+          if (f.special === 'coffre') return { data: put(s.data, { ...lead, status: 'atypique' }) }
+          const created = upsertMoveFromLead(s.data, lead, s.seedDay)
+          const missing = missingFields(f)
+          const replyAt = new Date(new Date(lead.receivedAt).getTime() + 2 * 60_000).toISOString()
+          const next: Lead =
+            lead.origin === 'gerant'
+              ? { ...lead, moveId: created.moveId, status: missing.length ? 'rappel' : 'complete', callback: missing.length ? { questions: missing } : undefined }
+              : { ...lead, moveId: created.moveId, status: missing.length ? 'attenteClient' : 'complete', replyAt }
+          return { data: put(created.data, next) }
+        }),
+      clientReply: (id) =>
+        set((s) => {
+          const lead = s.data.leads.find((l) => l.id === id)
+          if (!lead || lead.status !== 'attenteClient') return {}
+          const next: Lead = { ...lead, added: { ...lead.added, ...clientAnswers(lead) }, clientReplyAt: new Date().toISOString(), status: 'complete' }
+          const created = upsertMoveFromLead(s.data, next, s.seedDay)
+          return { data: { ...created.data, leads: created.data.leads.map((x) => (x.id === id ? next : x)) } }
+        }),
+      completeCallback: (id, answers) =>
+        set((s) => {
+          const lead = s.data.leads.find((l) => l.id === id)
+          if (!lead || lead.status !== 'rappel') return {}
+          const added = { ...lead.added, ...answers }
+          const missing = missingFields({ ...lead.facts, ...added })
+          const next: Lead = {
+            ...lead, added, status: missing.length ? 'rappel' : 'complete',
+            callback: { questions: missing.length ? missing : (lead.callback?.questions ?? []), doneAt: missing.length ? undefined : new Date().toISOString() },
+          }
+          const created = upsertMoveFromLead(s.data, next, s.seedDay)
+          const move = created.data.moves.find((m) => m.id === created.moveId)
+          const withQuote = next.status === 'complete' && move ? { ...next, quote: prepareQuote(next, move, s.data.settings.pricing) } : next
+          return { data: { ...created.data, leads: created.data.leads.map((x) => (x.id === id ? withQuote : x)) } }
+        }),
+      requestPhotos: (id) => set((s) => ({ data: patchLead(s.data, id, (l) => ({ ...l, photosRequestedAt: new Date().toISOString() })) })),
+      clientSendPhotos: (id, mode) =>
+        set((s) => {
+          const photos = DEMO_CLIENT_PHOTOS[mode]
+          return {
+            data: patchLead(s.data, id, (l) => ({
+              ...l, photos, photosAt: new Date().toISOString(), inventory: inventoryFromPhotos(photos), confidence: confidenceFor(photos), volumeValidatedAt: undefined,
+            })),
+          }
+        }),
+      setInventoryQty: (id, lineId, qty) =>
+        set((s) => ({
+          data: patchLead(s.data, id, (l) => ({
+            ...l,
+            inventory: (l.inventory ?? []).map((x) => (x.id === lineId ? { ...x, qty: Math.min(99, Math.max(0, Math.round(Number.isFinite(qty) ? qty : 0))) } : x)),
+          })),
+        })),
+      validateVolume: (id) =>
+        set((s) => {
+          const lead = s.data.leads.find((l) => l.id === id)
+          if (!lead?.inventory) return {}
+          const next = { ...lead, volumeValidatedAt: new Date().toISOString(), added: { ...lead.added, volume: Math.max(1, Math.round(inventoryTotal(lead.inventory))) } }
+          const created = upsertMoveFromLead(s.data, next, s.seedDay)
+          return { data: patchLead(created.data, id, () => next) }
+        }),
+      proposeVisit: (id) =>
+        set((s) => {
+          const lead = s.data.leads.find((l) => l.id === id)
+          if (!lead?.moveId) return {}
+          return { data: { ...s.data, moves: s.data.moves.map((m) => (m.id === lead.moveId ? { ...m, status: 'visite' as const, visitOn: addDays(s.seedDay, 2) } : m)) } }
+        }),
+      prepareQuote: (id) =>
+        set((s) => {
+          const lead = s.data.leads.find((l) => l.id === id)
+          const move = s.data.moves.find((m) => m.id === lead?.moveId)
+          if (!lead || !move || lead.quote?.sentAt) return {}
+          return { data: patchLead(s.data, id, (l) => ({ ...l, quote: prepareQuote(l, move, s.data.settings.pricing) })) }
+        }),
+      setQuoteLine: (id, lineId, patch) =>
+        set((s) => ({ data: patchLead(s.data, id, (l) => (l.quote && !l.quote.sentAt ? { ...l, quote: patchLine(l.quote, lineId, patch) } : l)) })),
+      sendQuote: (id) => {
+        const s = get()
+        const lead = s.data.leads.find((l) => l.id === id)
+        if (!lead?.quote || lead.quote.sentAt) return false
+        const q = { ...lead.quote, sentAt: new Date().toISOString() }
+        const data = patchLead(s.data, id, (l) => ({ ...l, quote: q }))
+        set({
+          data: {
+            ...data,
+            moves: data.moves.map((m) =>
+              m.id === lead.moveId
+                ? { ...m, status: 'devisEnvoye' as const, quoteSentOn: s.seedDay, priceCents: quoteTotal(q), depositCents: quoteDeposit(q), options: optionsOf(q) }
+                : m,
+            ),
+          },
+        })
+        return true
+      },
+      signQuote: (id, name, image) =>
+        set((s) => {
+          const lead = s.data.leads.find((l) => l.id === id)
+          if (!lead?.quote?.sentAt || lead.quote.signedAt) return {}
+          const data = patchLead(s.data, id, (l) => ({ ...l, quote: { ...l.quote!, signedAt: new Date().toISOString(), signature: { name, image } } }))
+          return { data: { ...data, moves: data.moves.map((m) => (m.id === lead.moveId ? { ...m, status: 'devisSigne' as const, signedOn: s.seedDay } : m)) } }
+        }),
       resolveAlert: (alert) => {
         if (alert.kind === 'conflict') return alert.conflict ? get().resolveConflict(alert.conflict) : false
         if (alert.kind === 'damage') return !!(alert.dayId && alert.moveId && get().openClaim(alert.dayId, alert.moveId))
@@ -239,6 +388,11 @@ export const useDemo = create<DemoState>()(
   ),
 )
 
+/** Remplace une demande par sa version modifiée. */
+function patchLead(data: DemoData, id: string, fn: (l: Lead) => Lead): DemoData {
+  return { ...data, leads: data.leads.map((l) => (l.id === id ? fn(l) : l)) }
+}
+
 /** Vérifie que la sauvegarde a bien toutes les listes attendues (sinon : données de départ). */
 function isValidData(d: unknown): d is DemoData {
   const x = d as Partial<DemoData> | undefined
@@ -249,6 +403,7 @@ function isValidData(d: unknown): d is DemoData {
     Array.isArray(x.absences) &&
     Array.isArray(x.days) &&
     Array.isArray(x.claims) &&
+    Array.isArray(x.leads) &&
     [x.staff, x.teams, x.vehicles, x.customers, x.moves].every((list) => Array.isArray(list) && list.length > 0)
   )
 }

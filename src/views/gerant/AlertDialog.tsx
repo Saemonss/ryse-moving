@@ -67,7 +67,7 @@ function labels(alert: Alert, data: DemoData, t: ReturnType<typeof useI18n>['t']
   const move = byId(data.moves, alert.moveId)
   const client = byId(data.customers, move?.customerId)?.name ?? ''
   const k = alert.kind
-  if (k === 'conflict' || k === 'lowMargin')
+  if (k === 'conflict' || k === 'lowMargin' || k === 'callback' || k === 'quoteReady')
     return { title: alert.conflict ? t(`conflicts.title.${alert.conflict.kind}`) : '', apply: t('conflicts.apply'), done: t('conflicts.done') }
   if (k === 'inspection') return { title: t('alerts.inspection.modalTitle'), apply: t('alerts.inspection.apply', { date }), done: t('alerts.inspection.done', { date }) }
   return { title: t(`alerts.${k}.modalTitle`), apply: t(`alerts.${k}.apply`), done: t(`alerts.${k}.done`, { client }) }
@@ -83,6 +83,8 @@ function AlertBody({ alert, data }: { alert: Alert; data: DemoData }) {
     case 'conflict':
       return alert.conflict ? <ConflictDetail conflict={alert.conflict} /> : null
     case 'lowMargin':
+    case 'callback':
+    case 'quoteReady':
       return null
     case 'quote':
       return (

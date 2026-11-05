@@ -70,7 +70,17 @@ export function deriveAlerts(data: DemoData, today: ISODate): Alert[] {
     }
   }
 
-  // 6. Marges faibles du dernier mois (action « Voir » → Rentabilité)
+  // 6. Rappels à faire : l'agent a besoin que le gérant rappelle le prospect
+  for (const l of data.leads) {
+    if (l.status === 'rappel') alerts.push({ id: `callback-${l.id}`, kind: 'callback', tone: 'warning', leadId: l.id, count: l.callback?.questions.length ?? 0 })
+  }
+
+  // 7. Devis préparés par l'agent, en attente de votre validation
+  for (const l of data.leads) {
+    if (l.quote && !l.quote.sentAt) alerts.push({ id: `quoteReady-${l.id}`, kind: 'quoteReady', tone: 'info', leadId: l.id })
+  }
+
+  // 8. Marges faibles du dernier mois (action « Voir » → Rentabilité)
   const low = recentLowMargin(data, today)
   if (low.length) alerts.push({ id: 'low-margin', kind: 'lowMargin', tone: 'warning', count: low.length })
 
@@ -98,6 +108,8 @@ export function fixAlert(data: DemoData, alert: Alert, today: ISODate): DemoData
         vehicles: data.vehicles.map((v) => (v.id === alert.vehicleId ? { ...v, inspectionBookedOn: alert.suggestedDate } : v)),
       }
     case 'lowMargin':
+    case 'callback':
+    case 'quoteReady':
       return data
   }
 }

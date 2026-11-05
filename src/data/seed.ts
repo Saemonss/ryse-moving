@@ -10,6 +10,8 @@ import { createRandom, type Random } from './random'
 import { addDays, fromISO } from './dates'
 import { distanceKm, plannedHoursFor } from './geo'
 import { DEMO_SIGNATURE, dayId } from './field'
+import { seedLeads } from './leads'
+import { DEFAULT_PRICING } from './quote'
 import type {
   Absence, Company, Customer, DemoData, DriverDay, Gender, ISODate, Move, MoveOption, MoveStatus, MoveType, Settings, Site, Staff, Team, Vehicle,
 } from './types'
@@ -57,6 +59,7 @@ type Crew = keyof typeof CREWS
 
 /** Paramètres de départ du calcul de marge (valeurs réalistes pour la Belgique, modifiables dans Paramètres). */
 export const DEFAULT_SETTINGS: Settings = {
+  pricing: DEFAULT_PRICING,
   hourlyCostCents: 3200,
   kmCostCents: { camion20: 38, camion40: 52, porteurHayon: 45, utilitaire: 25, monteMeubles: 30 },
   fuelCentsPerLitre: 175,
@@ -298,7 +301,7 @@ export function createSeed(today: ISODate): DemoData {
     .sort((a, b) => (a.invoicedOn! < b.invoicedOn! ? -1 : 1))
     .forEach((m, k) => (m.invoiceNumber = `F-${year}-${String(87 + k).padStart(4, '0')}`))
 
-  return { company: COMPANY, settings: DEFAULT_SETTINGS, teams: TEAMS, staff, absences, vehicles, customers, moves, days: seedDays(moves, customers), claims: [] }
+  return { company: COMPANY, settings: DEFAULT_SETTINGS, teams: TEAMS, staff, absences, vehicles, customers, moves, days: seedDays(moves, customers), claims: [], leads: seedLeads(moves, customers, today) }
 }
 
 /**
