@@ -37,7 +37,7 @@ export function DayEnd({ banner, onBack }: { banner?: React.ReactNode; onBack?: 
           onClose={() => setPicking(false)}
           suggested={['compteur']}
           onPick={() => {
-            const km = moves.reduce((s, m) => s + m.distanceKm, 0)
+            const km = moves.filter((m) => day.missions.some((x) => x.moveId === m.id && x.step >= MISSION_DONE)).reduce((s, m) => s + m.distanceKm, 0)
             update('dayEnd', (d) => ({ ...d, status: 'ended', endedAt: nowIso(), endKm: (d.check?.km ?? 0) + km, endPlace: d.startPlace }))
             toast(t('terrain.end.ended'))
           }}

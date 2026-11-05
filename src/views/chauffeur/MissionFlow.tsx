@@ -3,7 +3,7 @@
  * → chargement → trajet → état des lieux d'arrivée (+ signaler un dégât) → signature du client → « Mission terminée ».
  * Chaque saisie est enregistrée tout de suite sur le téléphone (et envoyée, ou mise en file hors ligne).
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Camera, CircleCheck, Minus, Navigation, PenLine, Phone, Plus, TriangleAlert } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { fmtPhone, fmtTime } from '../../i18n/format'
@@ -35,6 +35,10 @@ export function MissionFlow({ moveId, onBack, banner }: { moveId: string; onBack
   const [signature, setSignature] = useState<string | null>(null)
   const move = byId(data.moves, moveId)
   const log = day?.missions.find((m) => m.moveId === moveId)
+  // Mission introuvable (données réinitialisées entre-temps) : retour à la liste, jamais d'écran vide
+  useEffect(() => {
+    if (!day || !move || !log) onBack()
+  }, [day, move, log, onBack])
   if (!day || !move || !log) return null
   const client = customerOf(data, move)
   const place = move.to ? fmtAddress(move.to, lang) : t(move.type === 'debarras' ? 'common.recycling' : 'common.storage')

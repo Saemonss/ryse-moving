@@ -12,7 +12,7 @@ import { applyFix, detectConflicts } from '../data/conflicts'
 import { assignMoveData } from '../data/planning'
 import { todayISO } from '../data/dates'
 import type { Absence, Alert, Claim, DemoData, DriverDay, ISODate, PlanConflict, Settings } from '../data/types'
-import { MISSION_DONE, advanceMissionDemo, applyValidation, dayId, openClaimData, syncOffice } from '../data/field'
+import { MISSION_DONE, advanceMissionDemo, applyValidation, dayId, driverMoves, emptyMission, openClaimData, syncOffice } from '../data/field'
 
 export const STORAGE_KEY = 'ryse-moving-demo'
 const SCHEMA_VERSION = 5
@@ -151,13 +151,19 @@ export const useDemo = create<DemoState>()(
         const s = get()
         for (const staffId of ['s-karim', 's-didier']) {
           const day = s.phoneDays.find((d) => d.id === dayId(staffId, s.seedDay) && d.status === 'started')
-          const mission = day?.missions.find((m) => m.step < MISSION_DONE)
-          if (!day || !mission) continue
+          if (!day) continue
+          const nextMove = driverMoves(s.data, staffId, s.seedDay).find((m) => !day.missions.some((x) => x.moveId === m.id && x.step >= MISSION_DONE))
+          const mission = day.missions.find((m) => m.step < MISSION_DONE) ?? (nextMove ? emptyMission(nextMove.id) : undefined)
+          if (!mission) continue
           const move = s.data.moves.find((m) => m.id === mission.moveId)
           const client = s.data.customers.find((c) => c.id === move?.customerId)?.name ?? ''
           const next = advanceMissionDemo(mission, client, new Date().toISOString())
           get().field(next.step === MISSION_DONE ? 'signature' : 'step', (days) =>
-            days.map((d) => (d.id === day.id ? { ...d, missions: d.missions.map((m) => (m.moveId === next.moveId ? next : m)) } : d)),
+            days.map((d) =>
+              d.id === day.id
+                ? { ...d, missions: d.missions.some((m) => m.moveId === next.moveId) ? d.missions.map((m) => (m.moveId === next.moveId ? next : m)) : [...d.missions, next] }
+                : d,
+            ),
           )
           return s.data.staff.find((p) => p.id === staffId)?.firstName ?? ''
         }

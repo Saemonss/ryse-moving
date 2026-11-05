@@ -142,3 +142,12 @@ for (const lang of ['fr', 'nl'] as const) {
     expect((await big(page).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(56)
   })
 }
+
+test('Réinitialiser depuis la vue chauffeur en pleine mission : le téléphone repart proprement', async ({ page }) => {
+  await openFresh(page, 'chauffeur', 'fr')
+  await toInventory(page) // mission ouverte
+  await reset(page) // depuis la vue chauffeur
+  await toMissions(page) // reconnexion de Karim, début de journée, contrôle du camion
+  await expect(phone(page).getByText('Mes missions du jour')).toBeVisible()
+  await expect(big(page)).toBeVisible()
+})

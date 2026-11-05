@@ -15,6 +15,12 @@ import { DayEnd } from './DayEnd'
 import { useDriver } from './useDriver'
 
 export function ChauffeurApp() {
+  const { session, day, today } = useDriver()
+  // Clé : nouveau chauffeur, nouvelle journée ou réinitialisation → l'écran repart de zéro (aucun état périmé)
+  return <PhoneApp key={`${session ?? '-'}|${day?.id ?? '-'}|${today}`} />
+}
+
+function PhoneApp() {
   const { session, day } = useDriver()
   const online = useDemo((s) => s.online)
   const pending = useDemo((s) => s.queue.length)

@@ -24,6 +24,7 @@ export async function toMissions(page: Page) {
   await pickPhoto(page)
   await big(page).click() // Valider
   await phone(page).locator('[aria-pressed]').first().click() // carburant
+  await page.waitForTimeout(450) // comme une vraie personne : la protection anti double tap ignore un tap trop rapide
   await phone(page).locator('[aria-pressed]').first().click() // bon état
 }
 

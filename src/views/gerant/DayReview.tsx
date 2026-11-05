@@ -138,7 +138,7 @@ export function DayReview({ param }: { param?: string }) {
               <Card
                 key={m.moveId}
                 title={`${move ? customerOf(data, move)?.name : ''} · ${move?.ref ?? ''}`}
-                aside={margin && validated && <span className="text-sm font-medium text-success">{t('review.marginOf', { ref: move?.ref ?? '', pct: Math.round(margin.rate * 100) })}</span>}
+                aside={margin && validated && <span className={`text-sm font-medium ${margin.rate * 100 < data.settings.marginThresholdPct ? 'text-danger' : 'text-success'}`}>{t('review.marginOf', { ref: move?.ref ?? '', pct: Math.round(margin.rate * 100) })}</span>}
               >
                 <ol className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
                   {m.times.map((tm, i) => (

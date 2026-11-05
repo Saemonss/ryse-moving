@@ -192,6 +192,7 @@ export const nl: Dictionary = {
     transport: 'Transport ({km} km)',
     lift: 'Verhuislift (opstelling)',
     liftRental: 'Huur van een verhuislift',
+    driverExpenses: 'Kosten van de chauffeur (tol, brandstof, parkeren)',
     material: 'Materiaal',
     totalCost: 'Totale kost',
     margin: 'Marge',

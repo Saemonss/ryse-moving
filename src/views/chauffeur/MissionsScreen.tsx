@@ -18,10 +18,12 @@ import { Button } from '../../ui/Button'
 import { StatusBadge } from '../../ui/StatusBadge'
 import { toast } from '../../ui/Toast'
 import { nowIso, useDriver } from './useDriver'
+import { useDemo } from '../../store/demoStore'
 
 export function MissionsScreen({ banner, onOpen, onEnd }: { banner?: React.ReactNode; onOpen: (moveId: string) => void; onEnd: () => void }) {
   const { t, lang } = useI18n()
-  const { day, moves, data, update } = useDriver()
+  const { day, moves, data, update, staff } = useDriver()
+  const logout = useDemo((s) => s.logout)
   const [calling, setCalling] = useState<Move | null>(null)
   const [routing, setRouting] = useState<Move | null>(null)
   const [expense, setExpense] = useState(false)
@@ -72,6 +74,9 @@ export function MissionsScreen({ banner, onOpen, onEnd }: { banner?: React.React
     >
       {paused && pauseSince && <p className="rounded-2xl bg-warning-soft px-4 py-3 font-semibold text-warning">{t('terrain.pause.banner', { time: fmtTime(pauseSince, lang) })}</p>}
       {moves.length === 0 && <p className="text-muted">{t('terrain.missions.none')}</p>}
+      <button type="button" onClick={logout} className="-mt-2 min-h-12 text-[16px] font-semibold text-accent">
+        {t('terrain.login.logout')} ({staff?.firstName})
+      </button>
       <ol className="space-y-3">
         {moves.map((m, i) => {
           const step = stepOf(m)
@@ -215,7 +220,7 @@ function ExpenseSheet({ open, onClose, moveId }: { open: boolean; onClose: () =>
         <p className="tabular text-center text-[30px] font-bold" aria-live="polite">
           {amount ? fmtMoney(cents, lang) : '— €'}
         </p>
-        <Keypad value={amount} onChange={setAmount} decimal maxLength={7} />
+        <Keypad value={amount} onChange={setAmount} decimal maxLength={6} />
         {(!kind || !photo || cents <= 0) && (
           <p id="expense-hint" className="text-center text-[15px] font-medium text-muted">
             {t('terrain.expense.hint')}

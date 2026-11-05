@@ -10,7 +10,6 @@ import { Avatar } from '../../ui/Avatar'
 import { Keypad, PhoneScreen } from '../../ui/phone/PhoneKit'
 
 const DEMO_PIN = '1234'
-const DRIVER_ROLES = ['chauffeur', 'chefEquipe']
 
 export function LoginScreen() {
   const { t } = useI18n()
@@ -19,7 +18,8 @@ export function LoginScreen() {
   const [who, setWho] = useState<string | null>(null)
   const [code, setCode] = useState('')
   const [wrong, setWrong] = useState(false)
-  const drivers = data.staff.filter((s) => DRIVER_ROLES.includes(s.role))
+  // Un téléphone par équipe : celui du chef d'équipe (évite deux relevés pour le même déménagement)
+  const drivers = data.staff.filter((s) => data.teams.some((tm) => tm.leaderId === s.id))
   const person = drivers.find((d) => d.id === who)
 
   useEffect(() => {

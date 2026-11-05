@@ -164,6 +164,7 @@ export function BigChoice<T extends string>({ options, value, onChange, columns 
           <button
             key={v}
             type="button"
+            data-crawl-sample
             aria-pressed={on}
             onClick={() => onChange(v)}
             className={`flex min-h-14 items-center gap-2 rounded-2xl border-2 px-3 py-2 text-left text-[17px] font-semibold leading-tight transition-[background-color,border-color,transform] duration-150 active:scale-[0.97] ${

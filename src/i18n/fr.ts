@@ -187,6 +187,7 @@ export const fr = {
     transport: 'Transport ({km} km)',
     lift: 'Monte-meubles (mise en place)',
     liftRental: 'Location de monte-meubles',
+    driverExpenses: 'Frais du chauffeur (péage, carburant, parking)',
     material: 'Matériel',
     totalCost: 'Coût total',
     margin: 'Marge',

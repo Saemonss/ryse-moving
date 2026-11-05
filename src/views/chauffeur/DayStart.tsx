@@ -2,7 +2,7 @@
  * Début de journée : « Commencer ma journée » → position de départ (simulée, expliquée) →
  * contrôle du camion en 4 étapes maximum (photo du compteur, carburant, état oui/non, photo si problème).
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Camera, CircleCheck, Fuel, MapPin, Play, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import { fmtDate, fmtNumber } from '../../i18n/format'
@@ -80,6 +80,13 @@ export function VehicleCheck({ banner }: { banner?: React.ReactNode }) {
   const [odo, setOdo] = useState<string | null>(null)
   const [fuel, setFuel] = useState<FuelLevel | null>(null)
   const [picking, setPicking] = useState(false)
+  const lastTap = useRef(0)
+  /** Anti double tap : un choix qui fait avancer ne compte qu'une fois en 0,4 s. */
+  const once = (fn: () => void) => {
+    if (Date.now() - lastTap.current < 400) return
+    lastTap.current = Date.now()
+    fn()
+  }
   if (!day) return null
   const km = demoOdometer(day.vehicleId)
   const vehicle = byId(data.vehicles, day.vehicleId)
@@ -125,10 +132,12 @@ export function VehicleCheck({ banner }: { banner?: React.ReactNode }) {
         <BigChoice
           label={t('terrain.check.fuelTitle')}
           value={fuel}
-          onChange={(v) => {
-            setFuel(v)
-            setStepIdx(2)
-          }}
+          onChange={(v) =>
+            once(() => {
+              setFuel(v)
+              setStepIdx(2)
+            })
+          }
           options={(['quart', 'demi', 'troisQuarts', 'plein'] as const).map((v) => ({ value: v, label: t(`terrain.check.fuel.${v}`), icon: Fuel }))}
         />
       )}
@@ -137,7 +146,7 @@ export function VehicleCheck({ banner }: { banner?: React.ReactNode }) {
           label={t('terrain.check.stateTitle')}
           columns={1}
           value={null}
-          onChange={(v) => (v === 'yes' ? save(true) : setStepIdx(3))}
+          onChange={(v) => once(() => (v === 'yes' ? save(true) : setStepIdx(3)))}
           options={[
             { value: 'yes', label: t('terrain.check.yes'), icon: ThumbsUp },
             { value: 'no', label: t('terrain.check.no'), icon: ThumbsDown },

@@ -165,7 +165,7 @@ for (const lang of LANGS) {
     test(`${lang.toUpperCase()} · ${screen}`, async ({ page }, info) => {
       // États du téléphone : on teste ce qui est DANS le téléphone (la barre du haut l'est déjà ailleurs)
       phoneOnly = screen in STATES
-      if (phoneOnly) test.setTimeout(480_000)
+      if (phoneOnly) test.setTimeout(720_000)
       const failures: string[] = []
       let checked = 0
       const queue: number[][] = []
