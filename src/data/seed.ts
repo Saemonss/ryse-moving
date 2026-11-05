@@ -5,6 +5,7 @@
  *   Noms, rues, étages, prix et dates intermédiaires sont générés de façon reproductible.
  * Les 5 situations de démo sont marquées dans PLAN par « special ».
  */
+import { ALL_AGENTS_ON } from './agents'
 import { CITIES, COMPANY_NAMES, FIRST_NAMES, LAST_NAMES, STREETS } from './lists'
 import { createRandom, type Random } from './random'
 import { addDays, fromISO } from './dates'
@@ -60,6 +61,7 @@ type Crew = keyof typeof CREWS
 /** Paramètres de départ du calcul de marge (valeurs réalistes pour la Belgique, modifiables dans Paramètres). */
 export const DEFAULT_SETTINGS: Settings = {
   pricing: DEFAULT_PRICING,
+  agents: ALL_AGENTS_ON,
   hourlyCostCents: 3200,
   kmCostCents: { camion20: 38, camion40: 52, porteurHayon: 45, utilitaire: 25, monteMeubles: 30 },
   fuelCentsPerLitre: 175,

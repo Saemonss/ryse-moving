@@ -5,7 +5,7 @@
  *   ready: false = pas encore développé → jamais affiché (ni menu, ni lien).
  */
 import {
-  CalendarDays, CalendarOff, Inbox, CalendarRange, ChartColumn, ClipboardList, FileText, Handshake, House, LayoutDashboard, Receipt,
+  BellRing, Bot, Calculator, CalendarDays, CalendarOff, Inbox, CalendarRange, ChartColumn, ClipboardList, FileText, Handshake, House, LayoutDashboard, Receipt,
   Settings2, Smartphone, Truck, Users, type LucideIcon,
 } from 'lucide-react'
 import { CLIENT_CUSTOMER_ID } from '../data/seed'
@@ -48,6 +48,8 @@ export const VIEWS: ViewDef[] = [
       { id: 'journee', icon: ClipboardList, label: 'review.blockTitle', menu: false, ready: true },
       { id: 'litige', icon: FileText, label: 'menu.dossier', menu: false, ready: true },
       { id: 'demande', icon: Inbox, label: 'inbox.title', menu: false, ready: true },
+      { id: 'agents', icon: Bot, label: 'agents.title', menu: false, ready: true },
+      { id: 'gains', icon: Calculator, label: 'gains.title', menu: false, ready: true },
     ],
   },
   {
@@ -64,6 +66,9 @@ export const VIEWS: ViewDef[] = [
     screens: [
       { id: 'demandes', icon: Inbox, label: 'inbox.title', menu: true, ready: true },
       { id: 'devis', icon: FileText, label: 'quote.listTitle', menu: true, ready: true },
+      { id: 'relances', icon: BellRing, label: 'followup.title', menu: true, ready: true },
+      { id: 'agents', icon: Bot, label: 'agents.title', menu: true, ready: true },
+      { id: 'gains', icon: Calculator, label: 'gains.title', menu: false, ready: true },
       { id: 'demande', icon: Inbox, label: 'inbox.title', menu: false, ready: true },
     ],
   },

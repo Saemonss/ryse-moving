@@ -5,7 +5,7 @@
  * Règle d'or : l'agent prépare, l'humain valide ce qui engage l'entreprise.
  */
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Bot, CircleCheck, LoaderCircle, Phone, Send, TriangleAlert } from 'lucide-react'
+import { ArrowLeft, Bot, Sparkles, CircleCheck, LoaderCircle, Phone, Send, TriangleAlert } from 'lucide-react'
 import { translate, useI18n } from '../../i18n'
 import { fmtPhone } from '../../i18n/format'
 import { useDemo } from '../../store/demoStore'
@@ -44,8 +44,11 @@ export function LeadDetail({ param }: { param?: string }) {
   const steps = lead ? stepsFor(lead) : []
   const [step, setStep] = useState(lead?.status === 'nouvelle' ? 0 : steps.length)
   const done = useRef(false)
+  // Agent d'accueil désactivé (page Agents IA) : la demande attend ; l'humain peut lancer l'agent quand même
+  const [manualRun, setManualRun] = useState(false)
+  const paused = !!lead && lead.status === 'nouvelle' && !data.settings.agents.accueil && !manualRun
   useEffect(() => {
-    if (!lead || lead.status !== 'nouvelle') return
+    if (!lead || lead.status !== 'nouvelle' || paused) return
     if (step >= steps.length) {
       if (!done.current) {
         done.current = true
@@ -55,7 +58,7 @@ export function LeadDetail({ param }: { param?: string }) {
     }
     const id = window.setTimeout(() => setStep((s) => s + 1), STEP_MS)
     return () => window.clearTimeout(id)
-  }, [step, lead, steps.length, processLead])
+  }, [step, lead, steps.length, processLead, paused])
 
   const backLink = (
     <a
@@ -106,7 +109,21 @@ export function LeadDetail({ param }: { param?: string }) {
         </StatusBadge>
       </header>
 
-      {processing && <AgentSteps steps={steps} step={step} />}
+      {paused ? (
+        <Card className="mb-6">
+          <p className="mb-4 text-[16px] font-medium text-ink">{t('agents.offNote.accueil')}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button icon={Sparkles} onClick={() => setManualRun(true)}>
+              {t('agents.runNow')}
+            </Button>
+            <ScreenLink view={view} screen="agents" className="text-[15px]">
+              {t('agents.reactivate')}
+            </ScreenLink>
+          </div>
+        </Card>
+      ) : (
+        processing && <AgentSteps steps={steps} step={step} />
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={lead.origin === 'gerant' ? t('lead.notes') : t('lead.original')}>
@@ -220,7 +237,18 @@ export function LeadDetail({ param }: { param?: string }) {
             </Card>
           )}
 
-          {lead.moveId && (lead.status === 'complete' || lead.status === 'attenteClient') && <VolumeCard lead={lead} />}
+          {lead.moveId &&
+            (lead.status === 'complete' || lead.status === 'attenteClient') &&
+            (data.settings.agents.volume || lead.inventory ? (
+              <VolumeCard lead={lead} />
+            ) : (
+              <Card>
+                <p className="text-[15px] text-muted">{t('agents.offNote.volume')}</p>
+                <ScreenLink view={view} screen="agents" className="mt-2 inline-block text-[15px]">
+                  {t('agents.reactivate')}
+                </ScreenLink>
+              </Card>
+            ))}
           {lead.moveId && (lead.status === 'complete' || lead.quote) && <QuoteCard lead={lead} />}
         </div>
       )}

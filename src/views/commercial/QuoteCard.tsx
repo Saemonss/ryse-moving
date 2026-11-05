@@ -15,7 +15,9 @@ import { Button } from '../../ui/Button'
 import { StatusBadge } from '../../ui/StatusBadge'
 import { AiProcessing } from '../../ui/AiProcessing'
 import { clearToasts, toast } from '../../ui/Toast'
-import { go } from '../../app/router'
+import { go, useRoute } from '../../app/router'
+import type { ViewId } from '../../app/views'
+import { ScreenLink } from '../shared/ScreenLink'
 import { quotePdfUrl } from '../../pdf/quotePdf'
 
 export function QuoteCard({ lead }: { lead: Lead }) {
@@ -27,6 +29,7 @@ export function QuoteCard({ lead }: { lead: Lead }) {
   const sendQuote = useDemo((s) => s.sendQuote)
   const [preparing, setPreparing] = useState(false)
   const [busy, setBusy] = useState(false)
+  const view = useRoute().view as ViewId
   useEffect(() => {
     if (!preparing) return
     const id = window.setTimeout(() => {
@@ -49,6 +52,15 @@ export function QuoteCard({ lead }: { lead: Lead }) {
     }
   }
 
+  if (!q && !data.settings.agents.devis && !preparing)
+    return (
+      <Card title={t('quote.title')}>
+        <p className="text-[15px] text-muted">{t('agents.offNote.devis')}</p>
+        <ScreenLink view={view} screen="agents" className="mt-2 inline-block text-[15px]">
+          {t('agents.reactivate')}
+        </ScreenLink>
+      </Card>
+    )
   if (!q)
     return (
       <Card title={t('quote.title')}>

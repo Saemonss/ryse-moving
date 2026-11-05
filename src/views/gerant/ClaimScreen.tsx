@@ -14,6 +14,7 @@ import { PhotoView } from '../../ui/Photo'
 import { toast } from '../../ui/Toast'
 import { go, hrefOf } from '../../app/router'
 import { ScreenLink } from '../shared/ScreenLink'
+import { ClaimAiCard } from './ClaimAiCard'
 
 const STATUSES: Claim['status'][] = ['ouvert', 'enCours', 'clos']
 const TONE: Record<Claim['status'], Tone> = { ouvert: 'warning', enCours: 'info', clos: 'success' }
@@ -108,6 +109,7 @@ export function ClaimScreen({ param }: { param?: string }) {
           </div>
         </Card>
       </div>
+      <ClaimAiCard key={claim.id} claim={claim} />
     </>
   )
 }

@@ -45,6 +45,11 @@ const SCREENS = [
   'gerant/parametres',
   'planificateur/absences',
   'planificateur/a-planifier',
+  'commercial/devis',
+  'commercial/relances',
+  'commercial/agents',
+  'commercial/gains',
+  'gerant/agents',
   'charte',
 ] as const
 // Le champ fichier est caché : on teste son bouton visible « Choisir un fichier sur le PC »

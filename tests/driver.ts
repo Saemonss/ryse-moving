@@ -78,7 +78,7 @@ export async function toDayEnd(page: Page) {
 }
 
 /** Menu présentateur : une entrée par son repère (reset, lead, network, advance). */
-export async function presenter(page: Page, entry: 'reset' | 'lead' | 'network' | 'advance') {
+export async function presenter(page: Page, entry: 'reset' | 'lead' | 'gains' | 'network' | 'advance') {
   await page.locator('header button[aria-haspopup]').click()
   await page.locator(`[data-popover] [data-presenter="${entry}"]`).click()
 }

@@ -26,6 +26,9 @@ import { ChauffeurApp } from '../views/chauffeur/ChauffeurApp'
 import { Inbox } from '../views/commercial/Inbox'
 import { LeadDetail } from '../views/commercial/LeadDetail'
 import { QuotesList } from '../views/commercial/QuotesList'
+import { FollowUpsScreen } from '../views/commercial/FollowUpsScreen'
+import { AgentsScreen } from '../views/shared/AgentsScreen'
+import { GainsScreen } from '../views/shared/GainsScreen'
 import { ClientApp } from '../views/client/ClientApp'
 import { ComptabiliteHome } from '../views/comptabilite/ComptabiliteHome'
 import { normalizeHash, useRoute, type Route } from './router'
@@ -53,10 +56,12 @@ const SCREENS: Record<ViewId, Record<string, Screen>> = {
     journee: DayReview,
     litige: ClaimScreen,
     demande: LeadDetail,
+    agents: AgentsScreen,
+    gains: GainsScreen,
   },
   planificateur: { planning: PlanificateurPlanning, absences: AbsencesScreen, 'a-planifier': ToPlanScreen },
   chauffeur: { accueil: ChauffeurApp },
-  commercial: { demandes: Inbox, devis: QuotesList, demande: LeadDetail },
+  commercial: { demandes: Inbox, devis: QuotesList, relances: FollowUpsScreen, agents: AgentsScreen, gains: GainsScreen, demande: LeadDetail },
   client: { accueil: ClientApp },
   comptabilite: { accueil: ComptabiliteHome },
 }

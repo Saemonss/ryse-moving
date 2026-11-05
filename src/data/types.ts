@@ -167,6 +167,8 @@ export interface Pricing {
 
 export interface Settings {
   pricing: Pricing
+  /** Agents IA actifs (interrupteurs de la page Agents IA). */
+  agents: Record<'accueil' | 'volume' | 'devis' | 'relances' | 'litiges' | 'resume', boolean>
   hourlyCostCents: number
   kmCostCents: Record<VehicleKind, number>
   fuelCentsPerLitre: number
@@ -269,6 +271,12 @@ export interface Claim {
   openedAt: string
   status: 'ouvert' | 'enCours' | 'clos'
   damage: Damage
+  /** Dossier rassemblé par l'agent (photos, faits, brouillons). */
+  aiPreparedAt?: string
+  /** Réponse au client validée et envoyée par le gérant. */
+  replySentAt?: string
+  /** Texte de la réponse tel qu'envoyé (après retouches du gérant). */
+  replyText?: string
 }
 
 /** Les alertes sont calculées à partir des données (jamais stockées) : régler le problème les fait disparaître. */

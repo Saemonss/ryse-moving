@@ -3,7 +3,7 @@
  * Sur les vues téléphone (pas de barre latérale), le logo s'affiche ici.
  */
 import { useEffect, useRef, useState } from 'react'
-import { FlaskConical, MessageSquarePlus, RotateCcw, Settings, SkipForward, Wifi, WifiOff } from 'lucide-react'
+import { Calculator, FlaskConical, MessageSquarePlus, RotateCcw, Settings, SkipForward, Wifi, WifiOff } from 'lucide-react'
 import { useDemo } from '../store/demoStore'
 import { toast } from '../ui/Toast'
 import { useI18n, type Lang } from '../i18n'
@@ -26,7 +26,7 @@ export function TopBar({ route, showLogo }: { route: ActiveView; showLogo: boole
       <div className="ml-auto flex items-center gap-2">
         <DemoBadge />
         <LangSwitch />
-        <PresenterMenu />
+        <PresenterMenu route={route} />
       </div>
     </header>
   )
@@ -101,7 +101,7 @@ function LangSwitch() {
   )
 }
 
-function PresenterMenu() {
+function PresenterMenu({ route }: { route: ActiveView }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const setResetOpen = useShell((s) => s.setResetOpen)
@@ -170,6 +170,18 @@ function PresenterMenu() {
           >
             <MessageSquarePlus size={18} aria-hidden="true" className="text-accent" />
             {t('newLead.menu')}
+          </button>
+          <button
+            data-presenter="gains"
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              go(route === 'gerant' ? 'gerant' : 'commercial', 'gains')
+            }}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[15px] font-medium text-ink transition-colors hover:bg-surface"
+          >
+            <Calculator size={18} aria-hidden="true" className="text-accent" />
+            {t('gains.menu')}
           </button>
           <button
             data-presenter="network"

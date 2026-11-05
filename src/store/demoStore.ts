@@ -4,6 +4,7 @@
  * - Données d'un autre jour ou illisibles → on repart automatiquement des données de départ du jour.
  * - resetDemo() recharge les données de départ (menu présentateur ou Ctrl + Maj + R).
  */
+import { AGENT_IDS } from '../data/agents'
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { createSeed } from '../data/seed'
@@ -19,7 +20,7 @@ import { addDays } from '../data/dates'
 import { MISSION_DONE, advanceMissionDemo, applyValidation, dayId, driverMoves, emptyMission, openClaimData, syncOffice } from '../data/field'
 
 export const STORAGE_KEY = 'ryse-moving-demo'
-const SCHEMA_VERSION = 7
+const SCHEMA_VERSION = 8
 
 /** Ce qui attend dans la file du téléphone quand il n'y a pas de réseau. */
 export type QueueLabel = 'dayStart' | 'vehicleCheck' | 'step' | 'photos' | 'damage' | 'signature' | 'expense' | 'pause' | 'dayEnd' | 'daySent'
@@ -52,6 +53,9 @@ interface DemoState {
   correctDay: (dayId: string, field: 'hours' | 'km' | 'expenses', from: number, to: number) => void
   openClaim: (dayId: string, moveId: string) => string
   setClaimStatus: (claimId: string, status: Claim['status']) => void
+  prepareClaim: (claimId: string) => void
+  sendClaimReply: (claimId: string, text: string) => boolean
+  sendReminder: (moveId: string) => boolean
   /** Menu présentateur : une nouvelle demande arrive (canal, langue). Renvoie son identifiant. */
   simulateLead: (channel: LeadChannel, lang: 'fr' | 'nl') => string
   /** Le gérant confie à l'agent une demande reçue par appel ou SMS (texte libre). Renvoie son identifiant. */
@@ -101,6 +105,7 @@ export const SETTINGS_BOUNDS = {
 function sanitize(s: Settings): Settings {
   const B = SETTINGS_BOUNDS
   return {
+    agents: Object.fromEntries(AGENT_IDS.map((id) => [id, s.agents?.[id] !== false])) as Settings['agents'],
     pricing: Object.fromEntries(
       Object.entries(s.pricing).map(([k, v]) => [k, k === 'depositPct' ? clamp(v, 0, 100) : clamp(v, 0, 10_000_000)]),
     ) as unknown as Settings['pricing'],
@@ -225,6 +230,29 @@ export const useDemo = create<DemoState>()(
       },
       setClaimStatus: (claimId, status) =>
         set((s) => ({ data: { ...s.data, claims: s.data.claims.map((c) => (c.id === claimId ? { ...c, status } : c)) } })),
+      prepareClaim: (claimId) =>
+        set((s) => ({
+          data: { ...s.data, claims: s.data.claims.map((c) => (c.id === claimId && !c.aiPreparedAt ? { ...c, aiPreparedAt: new Date().toISOString() } : c)) },
+        })),
+      sendClaimReply: (claimId, text) => {
+        const c = get().data.claims.find((x) => x.id === claimId)
+        if (!c || c.replySentAt) return false
+        set((s) => ({
+          data: {
+            ...s.data,
+            claims: s.data.claims.map((x) =>
+              x.id === claimId ? { ...x, replySentAt: new Date().toISOString(), replyText: text, status: x.status === 'ouvert' ? ('enCours' as const) : x.status } : x,
+            ),
+          },
+        }))
+        return true
+      },
+      sendReminder: (moveId) => {
+        const m = get().data.moves.find((x) => x.id === moveId)
+        if (!m || m.status !== 'devisEnvoye' || m.quoteReminderOn) return false
+        set((s) => ({ data: { ...s.data, moves: s.data.moves.map((x) => (x.id === moveId ? { ...x, quoteReminderOn: s.seedDay } : x)) } }))
+        return true
+      },
       simulateLead: (channel, lang) => {
         const s = get()
         const n = s.data.leads.filter((l) => l.id.startsWith('lead-sim')).length
@@ -381,7 +409,7 @@ export const useDemo = create<DemoState>()(
       merge: (persisted, current) => {
         const p = persisted as Partial<DemoState> | undefined
         if (!p || p.seedDay !== todayISO() || !isValidData(p.data) || !Array.isArray(p.phoneDays)) return current
-        return { ...current, seedDay: p.seedDay, data: p.data, phoneDays: p.phoneDays, session: p.session ?? null, online: p.online ?? true, queue: p.queue ?? [] }
+        return { ...current, seedDay: p.seedDay, data: { ...p.data, settings: sanitize(p.data.settings) }, phoneDays: p.phoneDays, session: p.session ?? null, online: p.online ?? true, queue: p.queue ?? [] }
       },
       migrate: () => fresh(),
     },
